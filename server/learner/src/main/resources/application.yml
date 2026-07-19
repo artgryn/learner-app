@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: learner
+  datasource:
+    url: jdbc:postgresql://postgres:15432/learner_db
+    username: myuser
+    password: secret
