@@ -1,0 +1,597 @@
+openapi: 3.1.0
+info:
+  title: Vocabulary Learning API
+  version: 0.1.0
+  description: >
+    App-only REST API for the vocabulary learning app (React Native client,
+    Spring Boot server). No public API. Grading is client-side: exercises ship
+    with their correct answer and the client submits results for tracking.
+    User identity is always derived from the bearer token subject, never from
+    the path or body.
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+  - url: http://localhost:8080/v1
+    description: Local
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: Catalog
+  - name: Enrollment
+  - name: Session
+  - name: Progress
+
+paths:
+  # ----------------------------- AUTH -----------------------------
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Create account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '409': { $ref: '#/components/responses/Error' }
+        '400': { $ref: '#/components/responses/Error' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Email + password to tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401': { $ref: '#/components/responses/Error' }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh token to new access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: New tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401': { $ref: '#/components/responses/Error' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Invalidate refresh token
+      responses:
+        '204': { description: Logged out }
+
+  # ---------------------------- CATALOG ---------------------------
+  /languages:
+    get:
+      tags: [Catalog]
+      summary: Supported languages
+      responses:
+        '200':
+          description: Languages
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Language' }
+
+  /lists:
+    get:
+      tags: [Catalog]
+      summary: Curated lists for a language pair
+      description: >
+        Returns only (base, target) pairs that have translation coverage, so
+        supported combos are emergent from data rather than a declared list.
+      parameters:
+        - name: target
+          in: query
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 2 }
+          example: sv
+        - name: base
+          in: query
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 2 }
+          example: en
+      responses:
+        '200':
+          description: Lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ListSummary' }
+
+  /lists/{listId}:
+    get:
+      tags: [Catalog]
+      summary: List detail
+      parameters:
+        - $ref: '#/components/parameters/ListId'
+      responses:
+        '200':
+          description: List detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListDetail' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /lists/{listId}/enroll:
+    post:
+      tags: [Enrollment]
+      summary: Enroll current user in a list (idempotent)
+      description: >
+        Creates one user_list row (a reference, not a copy of the words).
+        Idempotent - enrolling twice returns the existing enrollment.
+        User id comes from the token, not the body.
+      parameters:
+        - $ref: '#/components/parameters/ListId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [baseLang]
+              properties:
+                baseLang:
+                  type: string
+                  minLength: 2
+                  maxLength: 2
+                  description: Language taught FROM for this enrollment.
+                  example: en
+      responses:
+        '200':
+          description: Existing enrollment returned (idempotent)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enrollment' }
+        '201':
+          description: Enrollment created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enrollment' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  # -------------------------- ENROLLMENT --------------------------
+  /enrollments:
+    get:
+      tags: [Enrollment]
+      summary: Current user's enrollments with progress summary
+      responses:
+        '200':
+          description: Enrollments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Enrollment' }
+
+  /enrollments/{listId}:
+    get:
+      tags: [Enrollment]
+      summary: One enrollment (sessions done/total, percent complete)
+      parameters:
+        - $ref: '#/components/parameters/ListId'
+      responses:
+        '200':
+          description: Enrollment
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enrollment' }
+        '404': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [Enrollment]
+      summary: Un-enroll
+      parameters:
+        - $ref: '#/components/parameters/ListId'
+      responses:
+        '204': { description: Un-enrolled }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /enrollments/{listId}/progress:
+    get:
+      tags: [Progress]
+      summary: Per-word progress for a list
+      parameters:
+        - $ref: '#/components/parameters/ListId'
+      responses:
+        '200':
+          description: Progress rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WordProgress' }
+
+  # ---------------------------- SESSION ---------------------------
+  /enrollments/{listId}/sessions:
+    post:
+      tags: [Session]
+      summary: Derive a session on demand
+      description: >
+        Computes the next session fresh from due + new words and returns fully
+        built exercises WITH their correct answers (client-side grading).
+        A session is created, not fetched - there is no GET.
+      parameters:
+        - $ref: '#/components/parameters/ListId'
+      responses:
+        '200':
+          description: Session with exercises
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionResponse' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /sessions/{sessionId}/complete:
+    post:
+      tags: [Session]
+      summary: Close the session and submit results
+      description: >
+        Carries the results array. Server writes, in one transaction:
+        per result an attempt row + a list_progress upsert, then one
+        sessions row. Idempotent on retry via client-supplied exerciseId.
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResultsBatch' }
+      responses:
+        '200':
+          description: Progress updated and session logged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CompleteResponse' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /sessions/{sessionId}/answers:
+    post:
+      tags: [Session]
+      summary: Optional incremental result sync during a long session
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResultsBatch' }
+      responses:
+        '200':
+          description: Progress updated
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WordProgress' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  # ---------------------------- PROGRESS --------------------------
+  /me/home:
+    get:
+      tags: [Progress]
+      summary: Aggregate home load
+      description: >
+        Profile + enrollments + progress + resume pointer in one round trip.
+        There is no half-finished session to restore; resume points at the
+        last-active enrollment and the client generates the next session.
+      responses:
+        '200':
+          description: Home dashboard
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HomeResponse' }
+
+  /me/stats:
+    get:
+      tags: [Progress]
+      summary: Overall stats
+      responses:
+        '200':
+          description: Stats
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Stats' }
+
+# =============================================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ListId:
+      name: listId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema: { type: string }
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  schemas:
+    # ---- auth ----
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    TokenPair:
+      type: object
+      required: [accessToken, refreshToken]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer, description: Access token TTL in seconds }
+
+    # ---- catalog ----
+    Language:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, minLength: 2, maxLength: 2, example: sv }
+        name: { type: string, example: Swedish }
+    ListSummary:
+      type: object
+      required: [listId, name, targetLang, totalWords]
+      properties:
+        listId: { type: integer, format: int64 }
+        name: { type: string, example: Swedish Basics }
+        targetLang: { type: string, example: sv }
+        totalWords: { type: integer, example: 2000 }
+    ListDetail:
+      allOf:
+        - $ref: '#/components/schemas/ListSummary'
+        - type: object
+          properties:
+            allowedExercises:
+              type: array
+              nullable: true
+              description: Null = all types permitted.
+              items: { $ref: '#/components/schemas/ExerciseType' }
+
+    # ---- enrollment / progress ----
+    Enrollment:
+      type: object
+      required: [listId, name, baseLang, targetLang, status]
+      properties:
+        listId: { type: integer, format: int64 }
+        name: { type: string }
+        baseLang: { type: string, example: en }
+        targetLang: { type: string, example: sv }
+        status: { type: string, enum: [active, completed] }
+        wordsMastered: { type: integer, example: 1 }
+        totalWords: { type: integer, example: 3 }
+        sessions:
+          type: object
+          properties:
+            done: { type: integer, example: 1 }
+            estimatedTotal: { type: integer, example: 8 }
+        lastActiveAt: { type: string, format: date-time }
+    WordProgress:
+      type: object
+      required: [lexemeId, timesPracticed]
+      properties:
+        lexemeId: { type: integer, format: int64 }
+        timesPracticed: { type: integer }
+        correct: { type: integer }
+        wrong: { type: integer }
+        due: { type: string, format: date-time, nullable: true }
+
+    # ---- exercise type enum ----
+    ExerciseType:
+      type: string
+      enum: [en_ett, assemble, translate, base_form, produce_form, multi_select]
+
+    # ---- session response ----
+    SessionResponse:
+      type: object
+      required: [sessionId, listId, exercises]
+      properties:
+        sessionId: { type: string }
+        listId: { type: integer, format: int64 }
+        exercises:
+          type: array
+          items: { $ref: '#/components/schemas/Exercise' }
+
+    # ---- exercise: shared envelope + polymorphic payload ----
+    Prompt:
+      type: object
+      required: [text, lang]
+      properties:
+        text: { type: string, example: hus }
+        lang: { type: string, example: sv }
+    Exercise:
+      type: object
+      required: [exerciseId, exerciseType, lexemeId, prompt, exercise]
+      properties:
+        exerciseId: { type: string }
+        exerciseType: { $ref: '#/components/schemas/ExerciseType' }
+        lexemeId: { type: integer, format: int64 }
+        formType:
+          type: string
+          nullable: true
+          description: Which form is tested; null for whole-word exercises.
+          example: preteritum
+        prompt: { $ref: '#/components/schemas/Prompt' }
+        exercise:
+          description: Type-specific answer payload, discriminated by exerciseType.
+          oneOf:
+            - $ref: '#/components/schemas/EnEttPayload'
+            - $ref: '#/components/schemas/TranslatePayload'
+            - $ref: '#/components/schemas/AssemblePayload'
+            - $ref: '#/components/schemas/OptionsPayload'
+            - $ref: '#/components/schemas/MultiSelectPayload'
+
+    EnEttPayload:
+      type: object
+      required: [options, correctAnswer]
+      properties:
+        options:
+          type: array
+          items: { type: string }
+          example: [en, ett]
+        correctAnswer: { type: string, example: ett }
+    TranslatePayload:
+      type: object
+      required: [options, correctAnswer]
+      properties:
+        optionsLang:
+          type: string
+          description: Language of the options when it differs from the prompt.
+          example: en
+        options:
+          type: array
+          items: { type: string }
+          example: [house, car, tree, dog]
+        correctAnswer: { type: string, example: house }
+    AssemblePayload:
+      type: object
+      required: [letters, answerLength, correctAnswer]
+      properties:
+        letters:
+          type: array
+          description: Pre-shuffled, longer than the answer, may contain duplicates. Positional, not a set.
+          items: { type: string }
+          example: [k, a, c, g, i, k, n]
+        answerLength: { type: integer, example: 4 }
+        correctAnswer: { type: string, example: gick }
+    OptionsPayload:
+      description: Single-answer choice payload (base_form, produce_form).
+      type: object
+      required: [options, correctAnswer]
+      properties:
+        options:
+          type: array
+          items: { type: string }
+          example: [gå, gick, stå, få]
+        correctAnswer: { type: string, example: gå }
+    MultiSelectPayload:
+      type: object
+      required: [options, correctAnswers]
+      properties:
+        options:
+          type: array
+          items: { type: string }
+          example: [går, gick, gått, house, springer]
+        correctAnswers:
+          type: array
+          items: { type: string }
+          example: [går, gick, gått]
+
+    # ---- result submission ----
+    Result:
+      type: object
+      required: [exerciseId, lexemeId, exerciseType, isCorrect]
+      properties:
+        exerciseId: { type: string }
+        lexemeId: { type: integer, format: int64 }
+        exerciseType: { $ref: '#/components/schemas/ExerciseType' }
+        formType: { type: string, nullable: true }
+        isCorrect: { type: boolean }
+        elapsedMs: { type: integer }
+    ResultsBatch:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/Result' }
+    CompleteResponse:
+      type: object
+      properties:
+        sessionId: { type: string }
+        progress:
+          type: array
+          items: { $ref: '#/components/schemas/WordProgress' }
+
+    # ---- home / stats ----
+    HomeResponse:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id: { type: integer, format: int64 }
+            email: { type: string, format: email }
+        enrollments:
+          type: array
+          items: { $ref: '#/components/schemas/Enrollment' }
+        resume:
+          type: object
+          nullable: true
+          properties:
+            listId: { type: integer, format: int64 }
+    Stats:
+      type: object
+      properties:
+        wordsKnown: { type: integer, description: Distinct lexemes mastered across all lists }
+        streakDays: { type: integer }
+
+    # ---- error ----
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [status, code, message]
+          properties:
+            status: { type: integer, example: 400 }
+            code:
+              type: string
+              description: Stable machine-readable code. Clients branch on this, never on message.
+              example: NO_TRANSLATION_AVAILABLE
+            message: { type: string, example: No translation exists for this word in the target language }
+            traceId: { type: string, example: req_a3f2c9 }

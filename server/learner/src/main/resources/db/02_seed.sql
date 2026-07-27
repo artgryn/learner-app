@@ -1,141 +1,107 @@
 -- =============================================================
---  02_seed.sql  — "ett hus" and "att gå" in sv / en / ru
---  Explicit IDs for readable FKs; sequences reset at the end.
+--  02_seed.sql — "ett hus", "att gå", "jag" (sv+en)
+--  + curated list, themed en/ett list, minimal user sample.
+--  Matches revised 01_schema.sql (base_lang on user_list; enrollment-parented
+--  sessions & progress).
 -- =============================================================
 BEGIN;
 
 -- ---------- languages ----------
-INSERT INTO language (code, name) VALUES
-  ('sv','Swedish'), ('en','English'), ('ru','Russian');
+INSERT INTO language (code, name) VALUES ('sv','Swedish'), ('en','English');
 
--- =============================================================
---  LEXEMES
--- =============================================================
--- ett hus ------------------------------------------------------
-INSERT INTO lexeme (id, lang, lemma, pos, gender, infl_class, tema) VALUES
-  (1,'sv','hus',  'noun','ett','ZERO','{}');            -- indef_pl = indef_sg
-INSERT INTO lexeme (id, lang, lemma, pos, infl_class, tema) VALUES
-  (2,'en','house','noun','regular','{}');
-INSERT INTO lexeme (id, lang, lemma, pos, infl_class, tema) VALUES        -- ru masc, 2nd decl
-  (3,'ru','дом',  'noun','decl_m_hard','{"nom_pl":"дома"}'); -- stressed-plural irregularity
+-- ---------- lexemes ----------
+INSERT INTO lexeme (id, lang, lemma, pos, gender, infl_class, tema, note, freq_rank) VALUES
+  (1,'sv','hus','noun','ett','ZERO','{}', NULL, 600);
+INSERT INTO lexeme (id, lang, lemma, pos, infl_class, tema, note, freq_rank) VALUES
+  (3,'sv','gå','verb','strong',
+   '{"present":"går","preteritum":"gick","supine":"gått","present_participle":"gående","past_participle":"gången"}',
+   'to go, to walk', 80);
+INSERT INTO lexeme (id, lang, lemma, pos, infl_class, note, freq_rank) VALUES
+  (5,'sv','jag','pronoun','irregular','I (subject form)', 5);
+INSERT INTO lexeme (id, lang, lemma, pos, freq_rank) VALUES (2,'en','house','noun', 500);
+INSERT INTO lexeme (id, lang, lemma, pos, infl_class, tema, freq_rank) VALUES
+  (4,'en','go','verb','irregular',
+   '{"present_3sg":"goes","preteritum":"went","supine":"gone","present_participle":"going"}', 40);
+INSERT INTO lexeme (id, lang, lemma, pos, freq_rank) VALUES (6,'en','I','pronoun', 3);
 
--- att gå -------------------------------------------------------
-INSERT INTO lexeme (id, lang, lemma, pos, infl_class, tema) VALUES
-  (4,'sv','gå','verb','strong',
-   '{"present":"går","preteritum":"gick","supine":"gått","present_participle":"gående"}');
-INSERT INTO lexeme (id, lang, lemma, pos, infl_class, tema) VALUES
-  (5,'en','go','verb','irregular',
-   '{"present_3sg":"goes","preteritum":"went","supine":"gone","present_participle":"going"}');
-INSERT INTO lexeme (id, lang, lemma, pos, aspect, infl_class, tema) VALUES
-  (6,'ru','идти','verb','imperfective','motion_unidir',
-   '{"past_m":"шёл","past_f":"шла","past_n":"шло","past_pl":"шли"}');   -- suppletive past
-INSERT INTO lexeme (id, lang, lemma, pos, aspect, infl_class, tema) VALUES
-  (7,'ru','пойти','verb','perfective','motion_unidir',
-   '{"past_m":"пошёл","past_f":"пошла","past_pl":"пошли"}');            -- perfective partner
-
--- ---------- aspect pair (идти ↔ пойти) ----------
-INSERT INTO aspect_pair (imperfective, perfective) VALUES (6, 7);
-
--- =============================================================
---  WORD FORMS
--- =============================================================
--- hus (sv): ZERO plural → indef_pl equals indef_sg
+-- ---------- word forms ----------
 INSERT INTO word_form (lexeme_id, form_type, form) VALUES
-  (1,'indef_sg','hus'), (1,'def_sg','huset'),
-  (1,'indef_pl','hus'), (1,'def_pl','husen');
-
--- house (en)
+  (1,'indef_sg','hus'), (1,'def_sg','huset'), (1,'indef_pl','hus'), (1,'def_pl','husen');
+INSERT INTO word_form (lexeme_id, form_type, form) VALUES
+  (3,'infinitive','gå'), (3,'present','går'), (3,'preteritum','gick'),
+  (3,'supine','gått'), (3,'imperative','gå'),
+  (3,'present_participle','gående'), (3,'past_participle','gången');
+INSERT INTO word_form (lexeme_id, form_type, form) VALUES
+  (5,'subject','jag'), (5,'object','mig'),
+  (5,'possessive_c','min'), (5,'possessive_n','mitt'), (5,'possessive_pl','mina');
 INSERT INTO word_form (lexeme_id, form_type, form) VALUES
   (2,'sg','house'), (2,'pl','houses');
-
--- дом (ru): 6 cases × 2 numbers
 INSERT INTO word_form (lexeme_id, form_type, form) VALUES
-  (3,'nom_sg','дом'),   (3,'gen_sg','дома'),  (3,'dat_sg','дому'),
-  (3,'acc_sg','дом'),   (3,'ins_sg','домом'), (3,'prep_sg','доме'),
-  (3,'nom_pl','дома'),  (3,'gen_pl','домов'), (3,'dat_pl','домам'),
-  (3,'acc_pl','дома'),  (3,'ins_pl','домами'),(3,'prep_pl','домах');
-
--- gå (sv)
+  (4,'infinitive','go'), (4,'present_3sg','goes'), (4,'preteritum','went'),
+  (4,'supine','gone'), (4,'present_participle','going');
 INSERT INTO word_form (lexeme_id, form_type, form) VALUES
-  (4,'infinitive','gå'), (4,'present','går'), (4,'preteritum','gick'),
-  (4,'supine','gått'),   (4,'imperative','gå'), (4,'present_participle','gående');
+  (6,'subject','I'), (6,'object','me');
 
--- go (en)
-INSERT INTO word_form (lexeme_id, form_type, form) VALUES
-  (5,'infinitive','go'), (5,'present_3sg','goes'), (5,'present_participle','going'),
-  (5,'preteritum','went'), (5,'supine','gone');
+-- ---------- translations (undirected, a < b) ----------
+INSERT INTO translation (lexeme_a, lexeme_b) VALUES (1,2), (3,4), (5,6);
 
--- идти (ru): present (6) + suppletive past (4) + imperative (2)
-INSERT INTO word_form (lexeme_id, form_type, form) VALUES
-  (6,'infinitive','идти'),
-  (6,'present_1sg','иду'),  (6,'present_2sg','идёшь'), (6,'present_3sg','идёт'),
-  (6,'present_1pl','идём'), (6,'present_2pl','идёте'), (6,'present_3pl','идут'),
-  (6,'past_m','шёл'), (6,'past_f','шла'), (6,'past_n','шло'), (6,'past_pl','шли'),
-  (6,'imperative_sg','иди'), (6,'imperative_pl','идите');
+-- ---------- lists ----------
+INSERT INTO list (id, name, target_lang, user_id, allowed_exercises) VALUES
+  (1, 'Swedish Basics', 'sv', NULL, NULL);
+INSERT INTO list_item (list_id, lexeme_id, position) VALUES
+  (1, 5, 1), (1, 3, 2), (1, 1, 3);
+INSERT INTO list (id, name, target_lang, user_id, allowed_exercises) VALUES
+  (2, 'En/Ett Nouns', 'sv', NULL, '{en_ett,translate}');
+INSERT INTO list_item (list_id, lexeme_id, position) VALUES
+  (2, 1, 1);
 
--- пойти (ru, perfective): "present-shaped" forms carry FUTURE meaning
-INSERT INTO word_form (lexeme_id, form_type, form) VALUES
-  (7,'infinitive','пойти'),
-  (7,'future_1sg','пойду'), (7,'future_3sg','пойдёт'), (7,'future_3pl','пойдут'),
-  (7,'past_m','пошёл'), (7,'past_f','пошла'), (7,'past_pl','пошли'),
-  (7,'imperative_sg','пойди'), (7,'imperative_pl','пойдите');
+-- ============================= USER SAMPLE =============================
+-- account no longer carries base_lang
+INSERT INTO account (id, email) VALUES (1, 'demo@example.com');
 
--- =============================================================
---  SENSES  (each in its OWN language; gloss_dev is a dev label)
--- =============================================================
--- hus: monosemous
-INSERT INTO sense (id, lexeme_id, sense_num, gloss, gloss_dev) VALUES
-  (10, 1, 1, 'byggnad som man bor eller arbetar i', 'building for living/working');
-INSERT INTO sense (id, lexeme_id, sense_num, gloss, gloss_dev) VALUES
-  (11, 2, 1, 'a building for people to live or work in', 'house');
-INSERT INTO sense (id, lexeme_id, sense_num, gloss, gloss_dev) VALUES
-  (12, 3, 1, 'здание для жилья; тж. дом как жилище', 'house / home');
+-- enrollment carries the taught-from language (learn sv list FROM en)
+INSERT INTO user_list (user_id, list_id, base_lang, status) VALUES
+  (1, 1, 'en', 'active');
 
--- gå: polysemous → TWO senses
-INSERT INTO sense (id, lexeme_id, sense_num, gloss, gloss_dev) VALUES
-  (20, 4, 1, 'förflytta sig till fots',        'move on foot'),
-  (21, 4, 2, 'fungera, avlöpa (det går bra)',  'function / turn out');
-INSERT INTO sense (id, lexeme_id, sense_num, gloss, gloss_dev) VALUES
-  (22, 5, 1, 'move or travel from one place to another', 'go / move'),
-  (23, 5, 2, 'proceed or turn out (how did it go)',      'go / turn out');
-INSERT INTO sense (id, lexeme_id, sense_num, gloss, gloss_dev) VALUES
-  (24, 6, 1, 'двигаться пешком в одном направлении', 'go on foot, one direction');
+-- progress (parented to the enrollment above)
+INSERT INTO list_progress (user_id, list_id, lexeme_id, times_practiced, correct, wrong) VALUES
+  (1, 1, 5, 3, 3, 0),   -- jag: mastered
+  (1, 1, 3, 1, 0, 1);   -- gå:  started, 1 wrong
+-- hus: no row = not started
 
--- =============================================================
---  TRANSLATION EDGES  (directed sense→sense, typed)
--- =============================================================
--- hus → house : exact ; hus → дом : broader (дом also = home)
-INSERT INTO translation (from_sense, to_sense, equivalence, usage_note) VALUES
-  (10, 11, 'exact',   NULL),
-  (10, 12, 'broader', 'ryska "дом" täcker även "hem", inte bara byggnaden');
+-- one completed session (parented to the enrollment)
+INSERT INTO sessions (id, user_id, list_id, started_at, ended_at) VALUES
+  (1, 1, 1, now() - interval '10 minutes', now());
 
--- gå#1 (on foot) → go : broader (go = any mode) ; → идти : approximate
-INSERT INTO translation (from_sense, to_sense, equivalence, usage_note) VALUES
-  (20, 22, 'broader',     'English "go" covers all modes; "walk" is the exact match'),
-  (20, 24, 'approximate', 'идти = pesky specific: on foot, one direction, in progress');
+-- attempts logged during that session
+INSERT INTO attempt (user_id, list_id, lexeme_id, session_id, exercise_type, form_type, is_correct, elapsed_ms) VALUES
+  (1, 1, 5, 1, 'translate',  'subject',    true,  1800),
+  (1, 1, 5, 1, 'assemble',   'subject',    true,  4200),
+  (1, 1, 5, 1, 'translate',  'object',     true,  1500),
+  (1, 1, 3, 1, 'base_form',  'preteritum', false, 6100);
 
--- gå#2 (turn out) → go#2 : approximate (no clean Russian 1-word link here)
-INSERT INTO translation (from_sense, to_sense, equivalence, usage_note) VALUES
-  (21, 23, 'approximate', 'idiomatic "det går bra" ≈ "it is going well"');
-
--- =============================================================
---  fix identity sequences after explicit-id inserts
--- =============================================================
-SELECT setval(pg_get_serial_sequence('lexeme','id'), (SELECT max(id) FROM lexeme));
-SELECT setval(pg_get_serial_sequence('sense','id'),  (SELECT max(id) FROM sense));
+-- ---------- reset identity sequences ----------
+SELECT setval(pg_get_serial_sequence('lexeme','id'),   (SELECT max(id) FROM lexeme));
+SELECT setval(pg_get_serial_sequence('list','id'),     (SELECT max(id) FROM list));
+SELECT setval(pg_get_serial_sequence('account','id'),  (SELECT max(id) FROM account));
+SELECT setval(pg_get_serial_sequence('sessions','id'), (SELECT max(id) FROM sessions));
 
 COMMIT;
 
 -- =============================================================
 --  sanity queries (run manually)
 -- =============================================================
--- All forms of the Swedish verb gå:
---   SELECT form_type, form FROM word_form WHERE lexeme_id = 4 ORDER BY form_type;
--- What does Swedish "hus" translate to, with equivalence + note:
---   SELECT l.lang, l.lemma, t.equivalence, t.usage_note
---   FROM translation t
---   JOIN sense s2 ON s2.id = t.to_sense
---   JOIN lexeme l ON l.id = s2.lexeme_id
---   WHERE t.from_sense = 10;
--- Reverse (what maps TO Russian дом): uses translation_to_idx
---   SELECT from_sense FROM translation WHERE to_sense = 12;
+-- Enrollment language pair for user 1:
+--   SELECT ul.base_lang AS from_lang, l.target_lang AS to_lang, l.name
+--   FROM user_list ul JOIN list l ON l.id = ul.list_id WHERE ul.user_id = 1;
+--
+-- Forms of every word in "Swedish Basics", ordered:
+--   SELECT li.position, lx.lemma, wf.form_type, wf.form
+--   FROM list_item li JOIN lexeme lx ON lx.id=li.lexeme_id
+--   JOIN word_form wf ON wf.lexeme_id=lx.id
+--   WHERE li.list_id=1 ORDER BY li.position, wf.form_type;
+--
+-- User progress in Swedish Basics:
+--   SELECT lx.lemma, p.times_practiced, p.correct, p.wrong
+--   FROM list_progress p JOIN lexeme lx ON lx.id=p.lexeme_id
+--   WHERE p.user_id=1 AND p.list_id=1;
