@@ -15,6 +15,11 @@ public class SessionProperties {
     private int newWordsPerSession = 3;
     private int exercisesPerWordPerSession = 2;
     private int reviewWordsPerSession = 8;
+    // "≥3 spaced encounters across different sessions" is the only mastery
+    // signal documented (doc/app-info/MVP.md); used by ProgressService to
+    // compute wordsMastered/wordsKnown. Not an explicit product decision -
+    // revisit if that changes.
+    private int masteryThreshold = 3;
 
     public int getWordsPerSession() {
         return wordsPerSession;
@@ -46,5 +51,13 @@ public class SessionProperties {
 
     public void setReviewWordsPerSession(int reviewWordsPerSession) {
         this.reviewWordsPerSession = reviewWordsPerSession;
+    }
+
+    public int getMasteryThreshold() {
+        return masteryThreshold;
+    }
+
+    public void setMasteryThreshold(int masteryThreshold) {
+        this.masteryThreshold = masteryThreshold;
     }
 }

@@ -1,0 +1,8 @@
+/* Rozymaha — minimal web reset so the paper background shows before RN mounts. */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #faf7f2;
+  -webkit-font-smoothing: antialiased;
+}

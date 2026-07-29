@@ -3,6 +3,9 @@
 --  + curated list, themed en/ett list, minimal user sample.
 --  Matches revised 01_schema.sql (base_lang on user_list; enrollment-parented
 --  sessions & progress).
+--  The demo user is seeded FRESH (enrolled, zero progress) so every word is
+--  "not started" and gets its introduce card on the very first session -
+--  see 03_reset.sql to restore back to this state after exercising the API.
 -- =============================================================
 BEGIN;
 
@@ -60,31 +63,15 @@ INSERT INTO list_item (list_id, lexeme_id, position) VALUES
 INSERT INTO account (id, email) VALUES (1, 'demo@example.com');
 
 -- enrollment carries the taught-from language (learn sv list FROM en)
+-- no list_progress / sessions / attempt rows: a fresh enrollment starts
+-- with every word "not started" (no list_progress row = gets an intro card).
 INSERT INTO user_list (user_id, list_id, base_lang, status) VALUES
   (1, 1, 'en', 'active');
-
--- progress (parented to the enrollment above)
-INSERT INTO list_progress (user_id, list_id, lexeme_id, times_practiced, correct, wrong) VALUES
-  (1, 1, 5, 3, 3, 0),   -- jag: mastered
-  (1, 1, 3, 1, 0, 1);   -- gå:  started, 1 wrong
--- hus: no row = not started
-
--- one completed session (parented to the enrollment)
-INSERT INTO sessions (id, user_id, list_id, started_at, ended_at) VALUES
-  (1, 1, 1, now() - interval '10 minutes', now());
-
--- attempts logged during that session
-INSERT INTO attempt (user_id, list_id, lexeme_id, session_id, exercise_type, form_type, is_correct, elapsed_ms) VALUES
-  (1, 1, 5, 1, 'translate',  'subject',    true,  1800),
-  (1, 1, 5, 1, 'assemble',   'subject',    true,  4200),
-  (1, 1, 5, 1, 'translate',  'object',     true,  1500),
-  (1, 1, 3, 1, 'base_form',  'preteritum', false, 6100);
 
 -- ---------- reset identity sequences ----------
 SELECT setval(pg_get_serial_sequence('lexeme','id'),   (SELECT max(id) FROM lexeme));
 SELECT setval(pg_get_serial_sequence('list','id'),     (SELECT max(id) FROM list));
 SELECT setval(pg_get_serial_sequence('account','id'),  (SELECT max(id) FROM account));
-SELECT setval(pg_get_serial_sequence('sessions','id'), (SELECT max(id) FROM sessions));
 
 COMMIT;
 

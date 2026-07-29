@@ -1,0 +1,93 @@
+########################################
+# OS
+########################################
+.DS_Store
+Thumbs.db
+
+########################################
+# Logs
+########################################
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+########################################
+# Environment variables
+########################################
+.env
+.env.*
+!.env.example
+
+########################################
+# IntelliJ IDEA
+########################################
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+########################################
+# React Native (client)
+########################################
+client/node_modules/
+
+client/android/.gradle/
+client/android/build/
+client/android/app/build/
+
+client/ios/build/
+client/ios/DerivedData/
+
+client/.expo/
+client/.metro-health-check*
+
+########################################
+# Spring Boot / Gradle (server)
+########################################
+server/.gradle/
+server/build/
+server/out/
+
+# Spring Boot
+server/*.jar
+server/*.war
+
+########################################
+# VS Code
+########################################
+.vscode/
+
+########################################
+# Android Studio
+########################################
+client/android/local.properties
+client/android/captures/
+
+########################################
+# Generated bundles
+########################################
+*.jsbundle
+
+########################################
+# Keystores & secrets
+########################################
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+
+########################################
+# Coverage
+########################################
+coverage/
+*.lcov
+
+########################################
+# Temporary files
+########################################
+*.swp
+*.swo
+*~

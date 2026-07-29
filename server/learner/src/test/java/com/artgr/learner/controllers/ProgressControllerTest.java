@@ -28,8 +28,8 @@ class ProgressControllerTest {
                 .andExpect(jsonPath("$.enrollments[0].targetLang").value("sv"))
                 .andExpect(jsonPath("$.enrollments[0].status").value("active"))
                 .andExpect(jsonPath("$.enrollments[0].totalWords").value(3))
-                .andExpect(jsonPath("$.enrollments[0].wordsMastered").value(1))
-                .andExpect(jsonPath("$.enrollments[0].sessions.done").value(1))
+                .andExpect(jsonPath("$.enrollments[0].wordsMastered").value(0))
+                .andExpect(jsonPath("$.enrollments[0].sessions.done").value(0))
                 .andExpect(jsonPath("$.resume.listId").value(1));
     }
 
@@ -37,7 +37,7 @@ class ProgressControllerTest {
     void statsCountsDistinctMasteredWordsAndTodaysStreak() throws Exception {
         mockMvc.perform(get("/me/stats"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.wordsKnown").value(1))
-                .andExpect(jsonPath("$.streakDays").value(1));
+                .andExpect(jsonPath("$.wordsKnown").value(0))
+                .andExpect(jsonPath("$.streakDays").value(0));
     }
 }

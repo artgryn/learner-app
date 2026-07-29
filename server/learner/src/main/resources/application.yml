@@ -21,3 +21,4 @@ app:
     new-words-per-session: 3
     exercises-per-word-per-session: 2
     review-words-per-session: 8
+    mastery-threshold: 3

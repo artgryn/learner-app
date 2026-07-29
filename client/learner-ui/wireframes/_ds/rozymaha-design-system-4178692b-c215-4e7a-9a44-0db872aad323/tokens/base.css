@@ -1,0 +1,14 @@
+/* Rozymaha — base reset, applies the tokens to the document */
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-primary); text-decoration: none; }
+a:hover { color: var(--accent-primary-press); text-decoration: underline; }

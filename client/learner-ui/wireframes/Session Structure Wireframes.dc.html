@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<link rel="stylesheet" href="_ds/rozymaha-design-system-4178692b-c215-4e7a-9a44-0db872aad323/tokens/colors.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&amp;family=Architects+Daughter&amp;display=swap">
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body{margin:0;background:#f0eee9;font-family:'Patrick Hand',cursive}
+  .dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+  .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 15px/1.2 'Patrick Hand',cursive;color:#1a1a1a}
+  .dv-sub{font:16px/1.4 'Patrick Hand',cursive;color:rgba(0,0,0,.55);margin:0 0 22px;max-width:780px}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px;width:660px}
+  .dv-oid{font:600 11px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+  .dv-olabel{display:flex;flex-direction:column;gap:2px;font:18px/1.3 'Patrick Hand',cursive;color:#1a1a1a}
+  .dv-olabel .lbl-title{display:flex;align-items:baseline;gap:8px;font-weight:700;font-size:18px}
+  .dv-olabel .lbl-desc{font-size:14px;color:rgba(0,0,0,.6);max-width:600px}
+  .dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden;padding:20px;display:flex;gap:20px;flex-wrap:wrap}
+  .dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+  .dv-next{margin:22px 0 0;font:15px/1.6 'Patrick Hand',cursive;color:rgba(0,0,0,.55)}
+
+  .phone{width:270px;flex:none;border:2.5px solid #1a1a1a;border-radius:26px;padding:10px 8px;display:flex;flex-direction:column;gap:8px;background:#fdfcfa;transform:rotate(-0.3deg)}
+  .phone .screen-tag{font:11px ui-monospace,monospace;text-align:center;color:rgba(0,0,0,.4);letter-spacing:.5px}
+  .box{border:2px solid #1a1a1a;border-radius:10px;padding:8px 10px}
+  .box.dash{border-style:dashed}
+  .box.accent{border-color:var(--color-terracotta-600,#D9541F)}
+  .fill-accent{background:var(--color-terracotta-600,#D9541F);color:#fff;border-color:var(--color-terracotta-600,#D9541F)}
+  .row{display:flex;gap:6px;align-items:center}
+  .between{display:flex;justify-content:space-between;align-items:center}
+  .muted{color:rgba(0,0,0,.45);font-size:12px}
+  .tiny{font-size:11px}
+  .big{font-size:20px;font-weight:700}
+  .tag{border:1.5px solid #1a1a1a;border-radius:20px;padding:2px 8px;font-size:11px;display:inline-block}
+  .tag.dot{border-color:var(--color-terracotta-600,#D9541F);color:var(--color-terracotta-600,#D9541F)}
+  .tabbar{display:flex;justify-content:space-around;border-top:2px solid #1a1a1a;padding-top:6px;font-size:11px}
+  .stepper{display:flex;gap:4px;align-items:center}
+  .step-dot{width:16px;height:16px;border-radius:50%;border:2px solid #1a1a1a;display:flex;align-items:center;justify-content:center;font-size:9px}
+  .step-dot.on{background:var(--color-terracotta-600,#D9541F);color:#fff;border-color:var(--color-terracotta-600,#D9541F)}
+  .note{font-size:12.5px;color:rgba(0,0,0,.6);border-left:2px dashed #1a1a1a;padding-left:8px;margin-top:4px}
+  .squiggle{height:26px;width:100%}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t6">
+  <div class="dv-thd"><a class="dv-tid" href="#t6">6</a><span class="dv-tname">Home screen — detailed options on <a class="dv-oid" href="#2a">2a</a></span></div>
+  <p class="dv-sub">Four takes on the same session-count Home, varying how much detail sits below the main CTA.</p>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="2i">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2i">2i</a>+ retention stat</div>
+        <div class="lbl-desc">Adds the one global stat line back, since it's about the learner's overall progress, not a specific list.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">HOME</div>
+          <div class="tiny muted" style="text-align:center;margin-top:16px">Tuesday</div>
+          <div class="box accent" style="text-align:center;padding:26px 10px;margin-top:8px">
+            <div class="big" style="font-size:22px">3 sessions ready</div>
+            <div class="row" style="justify-content:center;margin-top:10px">
+              <div class="step-dot on" style="border-radius:4px">1</div><div class="step-dot" style="border-radius:4px">2</div><div class="step-dot" style="border-radius:4px">3</div>
+            </div>
+            <div class="box fill-accent" style="margin-top:10px">Start · session 1</div>
+          </div>
+          <div class="tiny muted" style="text-align:center;margin-top:12px">86% retention this week</div>
+          <div class="tabbar" style="margin-top:auto"><span>Home</span><span>Lists</span><span>Settings</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2j">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2j">2j</a>+ topic breakdown</div>
+        <div class="lbl-desc">Session dots become tappable, each labeled with which topic it covers — useful once lists have multiple topics queued the same day.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">HOME</div>
+          <div class="tiny muted" style="text-align:center;margin-top:16px">Tuesday</div>
+          <div class="box accent" style="text-align:center;padding:20px 10px;margin-top:8px">
+            <div class="big" style="font-size:20px">3 sessions ready</div>
+            <div class="box fill-accent" style="margin-top:8px">Start · session 1</div>
+          </div>
+          <div class="box" style="padding:8px 10px">
+            <div class="between"><span class="tiny">1 · Everyday basics</span><span class="tag dot">up next</span></div>
+          </div>
+          <div class="box dash" style="padding:8px 10px">
+            <div class="between"><span class="tiny muted">2 · Everyday basics</span></div>
+          </div>
+          <div class="box dash" style="padding:8px 10px">
+            <div class="between"><span class="tiny muted">3 · Travel &amp; transport</span></div>
+          </div>
+          <div class="tabbar" style="margin-top:auto"><span>Home</span><span>Lists</span><span>Settings</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2k">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2k">2k</a>Compact list, no hero card</div>
+        <div class="lbl-desc">Drops the big accent card entirely — sessions are just a short tappable list, closer to a task list than a hero CTA.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">HOME</div>
+          <div class="between" style="margin-top:16px"><span class="big" style="font-size:18px">Today</span><span class="tiny muted">3 sessions</span></div>
+          <div class="box" style="padding:10px">
+            <div class="between"><span>1 · Everyday basics</span><span class="tag dot">start</span></div>
+          </div>
+          <div class="box dash" style="padding:10px">
+            <div class="between"><span class="muted">2 · Everyday basics</span></div>
+          </div>
+          <div class="box dash" style="padding:10px">
+            <div class="between"><span class="muted">3 · Travel &amp; transport</span></div>
+          </div>
+          <div class="tabbar" style="margin-top:auto"><span>Home</span><span>Lists</span><span>Settings</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2l">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2l">2l</a>+ "why 3 sessions" note</div>
+        <div class="lbl-desc">One line of plain-language reasoning under the CTA, reinforcing the scientific-not-gamified tone instead of just showing a number.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">HOME</div>
+          <div class="tiny muted" style="text-align:center;margin-top:16px">Tuesday</div>
+          <div class="box accent" style="text-align:center;padding:26px 10px;margin-top:8px">
+            <div class="big" style="font-size:22px">3 sessions ready</div>
+            <div class="row" style="justify-content:center;margin-top:10px">
+              <div class="step-dot on" style="border-radius:4px">1</div><div class="step-dot" style="border-radius:4px">2</div><div class="step-dot" style="border-radius:4px">3</div>
+            </div>
+            <div class="box fill-accent" style="margin-top:10px">Start · session 1</div>
+          </div>
+          <div class="tiny muted" style="text-align:center;margin-top:12px">Spaced across the day for better retention</div>
+          <div class="tabbar" style="margin-top:auto"><span>Home</span><span>Lists</span><span>Settings</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "make <a class="dv-oid" href="#2j">2j</a> the default for <a class="dv-oid" href="#2a">2a</a>" · "combine <a class="dv-oid" href="#2k">2k</a>'s list style with <a class="dv-oid" href="#2l">2l</a>'s note"</p>
+</section>
+
+<section class="dv-turn" id="t5">
+  <div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">Generate mode — detailed flow</span></div>
+  <p class="dv-sub">Zooming into <a class="dv-oid" href="#3b">3b</a>'s "Generate list" step: prompt → generating → review before saving.</p>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="5a">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#5a">5a</a>Prompt → generating → review</div>
+        <div class="lbl-desc">Three states of one flow. Review lets you drop words and edit the title before the list is saved — nothing is added silently.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">1 · PROMPT</div>
+          <div class="tiny muted" style="text-align:center;margin-top:8px">Learning Swedish</div>
+          <div class="big" style="text-align:center;font-size:18px">What do you want to learn?</div>
+          <div class="box" style="padding:14px 10px">Swedish for a work trip</div>
+          <div class="box fill-accent" style="text-align:center">Generate list</div>
+          <div class="row" style="justify-content:center;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <span class="tag">Everyday</span><span class="tag">Travel</span><span class="tag">Food</span><span class="tag">Business</span>
+          </div>
+        </div>
+        <div class="phone">
+          <div class="screen-tag">2 · GENERATING</div>
+          <div class="box" style="text-align:center;padding:34px 10px;margin-top:30px">
+            <div class="big" style="font-size:16px">Finding words for</div>
+            <div class="tiny muted" style="margin-top:4px">"Swedish for a work trip"</div>
+            <div class="row" style="justify-content:center;gap:6px;margin-top:14px">
+              <div class="step-dot on"></div><div class="step-dot on"></div><div class="step-dot"></div>
+            </div>
+          </div>
+          <div class="box dash" style="padding:8px;color:rgba(0,0,0,.3)">meeting</div>
+          <div class="box dash" style="padding:8px;color:rgba(0,0,0,.3)">deadline</div>
+          <div class="box dash" style="padding:8px;color:rgba(0,0,0,.3)">…</div>
+        </div>
+        <div class="phone">
+          <div class="screen-tag">3 · REVIEW &amp; SAVE</div>
+          <div class="box" style="padding:8px 10px;margin-top:6px">Work trip vocabulary</div>
+          <div class="box" style="padding:8px 10px">
+            <div class="between"><span>möte — meeting</span><span class="tag">✓</span></div>
+          </div>
+          <div class="box" style="padding:8px 10px">
+            <div class="between"><span>deadline — deadline</span><span class="tag">✓</span></div>
+          </div>
+          <div class="box dash" style="padding:8px 10px">
+            <div class="between"><span class="muted">konferens — conference</span><span class="tag">remove</span></div>
+          </div>
+          <div class="tiny muted" style="text-align:center">24 words · edit before saving</div>
+          <div class="box fill-accent" style="text-align:center">Save list</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "add a regenerate option to <a class="dv-oid" href="#5a">5a</a>'s review step" · "let the user add their own word in <a class="dv-oid" href="#5a">5a</a>"</p>
+</section>
+
+<section class="dv-turn" id="t3">
+  <div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Onboarding &amp; list selection</span></div>
+  <p class="dv-sub">New screen: after picking Swedish, the user either generates their own list with AI or picks from lists other learners already made.</p>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="3b">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#3b">3b</a>AI-first, browse as fallback</div>
+        <div class="lbl-desc">Leads with the generator prompt; browsing existing lists is a secondary link below, for people without a specific goal yet.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">ONBOARDING — GENERATE</div>
+          <div class="tiny muted" style="text-align:center;margin-top:8px">Learning Swedish</div>
+          <div class="big" style="text-align:center;font-size:18px">What do you want to learn?</div>
+          <div class="box dash" style="color:rgba(0,0,0,.35);padding:14px 10px">e.g. "Swedish for a work trip"</div>
+          <div class="box fill-accent" style="text-align:center">Generate list</div>
+          
+          
+          <div class="row" style="justify-content:center;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <span class="tag">Everyday</span><span class="tag">Travel</span><span class="tag">Food</span><span class="tag">Business</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "show the AI generation loading/result state for <a class="dv-oid" href="#3b">3b</a>" · "make the tags in <a class="dv-oid" href="#3b">3b</a> tappable filters" · "add a segmented Create/Browse alternative"</p>
+</section>
+
+<section class="dv-turn" id="t4">
+  <div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">List progress — mark per-word mastery</span></div>
+  <p class="dv-sub">A word isn't done after one pass — it takes several correct iterations to count as mastered. Progress ring per word.</p>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="4c">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#4c">4c</a>Progress ring</div>
+        <div class="lbl-desc">Small ring per row fills as iterations complete — one glance shows how close the whole list is to mastered.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">LIST — EVERYDAY BASICS</div>
+          <div class="between" style="margin-top:8px"><span class="big" style="font-size:16px">Everyday basics</span><span class="tiny muted">18/120 mastered</span></div>
+          <div class="box" style="padding:10px">
+            <div class="between">
+              <span>leksak — toy</span>
+              <span class="row" style="gap:6px"><span style="width:22px;height:22px;border-radius:50%;background:conic-gradient(var(--color-terracotta-600,#D9541F) 270deg, rgba(0,0,0,.12) 0);display:inline-block"></span><span class="tiny muted">3/4</span></span>
+            </div>
+          </div>
+          <div class="box" style="padding:10px">
+            <div class="between">
+              <span>äpple — apple</span>
+              <span class="row" style="gap:6px"><span style="width:22px;height:22px;border-radius:50%;background:conic-gradient(var(--color-terracotta-600,#D9541F) 90deg, rgba(0,0,0,.12) 0);display:inline-block"></span><span class="tiny muted">1/4</span></span>
+            </div>
+          </div>
+          <div class="box" style="padding:10px">
+            <div class="between">
+              <span>bord — table</span>
+              <span class="row" style="gap:6px"><span style="width:22px;height:22px;border-radius:50%;background:var(--color-forest-600,#2f6f4a);display:inline-block"></span><span class="tiny muted">4/4</span></span>
+            </div>
+          </div>
+          <div class="note">Full green ring = mastered; ring fraction shown as text since color alone isn't precise enough</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "show what happens when a word drops back a level after a miss" · "add this mastery mark to the session screens in <a class="dv-oid" href="#2b">2b</a>"</p>
+</section>
+
+<section class="dv-turn" id="t2">
+  <div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Task-type flows, minimal chrome</span></div>
+  <p class="dv-sub">Home drops the time estimate and shows session count instead. Then one screen per task type: flashcard, multiple-choice translation, collocation choice, near-synonym discrimination, sentence gap-fill, and a dedicated word-forms teach+test step.</p>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="2a">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2a">2a</a>Home — session count</div>
+        <div class="lbl-desc">No time estimate. Shows how many sessions are queued, not how long they take.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">HOME</div>
+          <div class="tiny muted" style="text-align:center;margin-top:20px">Tuesday</div>
+          <div class="box accent" style="text-align:center;padding:30px 10px;margin-top:10px">
+            <div class="big" style="font-size:22px">3 sessions ready</div>
+            <div class="row" style="justify-content:center;margin-top:10px">
+              <div class="step-dot on" style="border-radius:4px">1</div><div class="step-dot" style="border-radius:4px">2</div><div class="step-dot" style="border-radius:4px">3</div>
+            </div>
+            <div class="box fill-accent" style="margin-top:10px">Start · session 1</div>
+          </div>
+          <div class="tiny muted" style="text-align:center;margin-top:16px">Open a list to see its progress</div>
+          <div class="tabbar" style="margin-top:auto"><span>Home</span><span>Lists</span><span>Settings</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2b">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2b">2b</a>Flashcard</div>
+        <div class="lbl-desc">Tap to reveal the meaning, no grading step shown.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">SESSION — FLASHCARD</div>
+          <div class="box dash" style="height:4px;padding:0;margin-top:4px"><div style="height:100%;width:20%;background:var(--color-terracotta-600,#D9541F);border-radius:6px"></div></div>
+          <div class="box" style="text-align:center;padding:34px 10px;margin-top:10px">
+            <div class="tiny muted">noun · neuter</div>
+            <div class="big" style="font-size:26px">äpple</div>
+            <div class="tiny muted" style="margin-top:10px">"Äpplet ligger på bordet."</div>
+            <div class="tag" style="margin-top:10px">tap to reveal meaning</div>
+          </div>
+          <div class="note">Reveals "apple" + tap again to advance — no manual grading buttons</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2f">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2f">2f</a>Multiple-choice translation</div>
+        <div class="lbl-desc">Word shown in one language, pick its match from 3–4 options in the other.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">SESSION — MULTIPLE CHOICE</div>
+          <div class="box dash" style="height:4px;padding:0;margin-top:4px"><div style="height:100%;width:28%;background:var(--color-terracotta-600,#D9541F);border-radius:6px"></div></div>
+          <div class="box" style="text-align:center;padding:20px 10px;margin-top:10px">
+            <div class="tiny muted">what does this mean?</div>
+            <div class="big" style="font-size:26px;margin-top:6px">äpple</div>
+          </div>
+          <div class="row" style="justify-content:space-between;margin-top:2px;flex-wrap:wrap">
+            <div class="box" style="flex:1 1 45%;text-align:center">apple</div>
+            <div class="box" style="flex:1 1 45%;text-align:center">pear</div>
+            <div class="box" style="flex:1 1 45%;text-align:center">orange</div>
+            <div class="box" style="flex:1 1 45%;text-align:center">plum</div>
+          </div>
+          <div class="note">Distractors are same category (fruit), not random words</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2c">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2c">2c</a>Collocation choice</div>
+        <div class="lbl-desc">Pick the word that correctly pairs with the headword — tests agreement/usage, not meaning.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">SESSION — COLLOCATION</div>
+          <div class="box dash" style="height:4px;padding:0;margin-top:4px"><div style="height:100%;width:35%;background:var(--color-terracotta-600,#D9541F);border-radius:6px"></div></div>
+          <div class="box" style="text-align:center;padding:20px 10px;margin-top:10px">
+            <div class="tiny muted">choose the word that fits</div>
+            <div class="big" style="font-size:20px;margin-top:6px">ett ___ äpple</div>
+          </div>
+          <div class="row" style="justify-content:space-between;margin-top:2px">
+            <div class="box" style="flex:1;text-align:center">moget</div>
+            <div class="box" style="flex:1;text-align:center">mogen</div>
+            <div class="box" style="flex:1;text-align:center">mogna</div>
+          </div>
+          <div class="note">Options are near-miss inflections of one word, not distinct vocabulary</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2d">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2d">2d</a>Near-synonym discrimination</div>
+        <div class="lbl-desc">Two words with overlapping meaning — pick the one that fits this context.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">SESSION — NEAR-SYNONYM</div>
+          <div class="box dash" style="height:4px;padding:0;margin-top:4px"><div style="height:100%;width:50%;background:var(--color-terracotta-600,#D9541F);border-radius:6px"></div></div>
+          <div class="box" style="text-align:center;padding:20px 10px;margin-top:10px">
+            <div class="tiny muted">which word fits here?</div>
+            <div class="big" style="font-size:18px;margin-top:6px">"Jag ___ simma, men jag ___ inte idag."</div>
+          </div>
+          <div class="row" style="justify-content:space-between;margin-top:2px">
+            <div class="box" style="flex:1;text-align:center">kan</div>
+            <div class="box" style="flex:1;text-align:center">vet</div>
+          </div>
+          <div class="note">kan = know how to / vet = know a fact — both translate loosely as "know"</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2e">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2e">2e</a>Sentence gap-fill</div>
+        <div class="lbl-desc">Full sentence, type the missing word from memory — no options shown.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">SESSION — GAP-FILL</div>
+          <div class="box dash" style="height:4px;padding:0;margin-top:4px"><div style="height:100%;width:65%;background:var(--color-terracotta-600,#D9541F);border-radius:6px"></div></div>
+          <div class="box" style="text-align:center;padding:20px 10px;margin-top:10px">
+            <div class="tiny muted">fill in the blank</div>
+            <div class="big" style="font-size:18px;margin-top:6px">"Jag köpte två röda ___."</div>
+          </div>
+          <div class="box dash" style="text-align:center;color:rgba(0,0,0,.35)">type your answer…</div>
+          <div class="note">No word bank — recall, not recognition</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2g">
+      <div class="dv-olabel">
+        <div class="lbl-title"><a class="dv-oid" href="#2g">2g</a>Word forms — teach + test</div>
+        <div class="lbl-desc">A word can have 3–5 forms. First a teaching card lays them all out, then a separate task tests recall of the right form in context.</div>
+      </div>
+      <div class="dv-card">
+        <div class="phone">
+          <div class="screen-tag">FORMS — TEACH</div>
+          <div class="box dash" style="height:4px;padding:0;margin-top:4px"><div style="height:100%;width:15%;background:var(--color-terracotta-600,#D9541F);border-radius:6px"></div></div>
+          <div class="box" style="text-align:center;padding:16px 10px;margin-top:10px">
+            <div class="tiny muted">noun · common gender — one word, 4 forms</div>
+            <div class="big" style="font-size:24px;margin-top:2px">leksak</div>
+            <div class="tiny muted" style="margin-top:2px">toy</div>
+          </div>
+          <div class="box" style="padding:12px">
+            <div class="row" style="justify-content:space-between;gap:10px">
+              <div style="flex:1;text-align:center">
+                <div class="tiny muted">indef. sg.</div>
+                <div style="font-size:15px">en leksak</div>
+                <div class="tiny muted">a toy</div>
+              </div>
+              <div style="flex:1;text-align:center">
+                <div class="tiny muted">def. sg.</div>
+                <div style="font-size:15px">leksaken</div>
+                <div class="tiny muted">the toy</div>
+              </div>
+            </div>
+            <div class="row" style="justify-content:space-between;gap:10px;margin-top:10px">
+              <div style="flex:1;text-align:center">
+                <div class="tiny muted">indef. pl.</div>
+                <div style="font-size:15px">leksaker</div>
+                <div class="tiny muted">toys</div>
+              </div>
+              <div style="flex:1;text-align:center">
+                <div class="tiny muted">def. pl.</div>
+                <div style="font-size:15px">leksakerna</div>
+                <div class="tiny muted">the toys</div>
+              </div>
+            </div>
+          </div>
+          <div class="note">One card, one word — the 4 forms sit together as a set, not as separate flashcards</div>
+        </div>
+        <div class="phone">
+          <div class="screen-tag">FORMS — TEST</div>
+          <div class="box dash" style="height:4px;padding:0;margin-top:4px"><div style="height:100%;width:40%;background:var(--color-terracotta-600,#D9541F);border-radius:6px"></div></div>
+          <div class="box" style="text-align:center;padding:20px 10px;margin-top:10px">
+            <div class="tiny muted">which form fits here?</div>
+            <div class="big" style="font-size:18px;margin-top:6px">"Var är ___ du köpte?"</div>
+          </div>
+          <div class="row" style="justify-content:space-between;margin-top:2px;flex-wrap:wrap">
+            <div class="box" style="flex:1 1 45%;text-align:center">leksak</div>
+            <div class="box" style="flex:1 1 45%;text-align:center">leksaken</div>
+            <div class="box" style="flex:1 1 45%;text-align:center">leksaker</div>
+            <div class="box" style="flex:1 1 45%;text-align:center">leksakerna</div>
+          </div>
+          <div class="note">Same 4 forms from one word — this is what collocation/gap-fill tasks quietly rotate through per repetition</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "add the reveal state to <a class="dv-oid" href="#2b">2b</a>" · "show a wrong-answer state for <a class="dv-oid" href="#2c">2c</a>" · "flip <a class="dv-oid" href="#2f">2f</a> to Swedish options" · "only teach forms the first time, skip <a class="dv-oid" href="#2g">2g</a>'s teach card on repeats"</p>
+</section>
+
+</x-dc>
+</body>
+</html>

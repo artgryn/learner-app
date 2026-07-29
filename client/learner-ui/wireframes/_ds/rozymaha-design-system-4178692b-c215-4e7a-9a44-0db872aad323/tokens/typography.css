@@ -1,0 +1,39 @@
+/* Rozymaha — Type tokens
+   Native-iOS direction: no custom webfonts. UI text uses the system
+   font (SF Pro on iOS, rendered via -apple-system); a system serif is
+   used sparingly for the foreign word being studied, to give it a
+   "dictionary headword" feel distinct from UI chrome. Numeric data
+   (word counts, retention %) uses the system monospace for tabular
+   alignment. */
+
+:root {
+  --font-ui:      -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-word:    ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono:    ui-monospace, "SF Mono", "Menlo", Consolas, monospace;
+
+  /* type scale — iOS Human Interface Guidelines sizes */
+  --text-caption2:  11px;
+  --text-caption1:  12px;
+  --text-footnote:  13px;
+  --text-subhead:   15px;
+  --text-callout:   16px;
+  --text-body:      17px;
+  --text-headline:  17px; /* body weight+600 */
+  --text-title3:    20px;
+  --text-title2:    22px;
+  --text-title1:    28px;
+  --text-largetitle: 34px;
+  --text-word-display: 40px; /* the studied word on a flashcard */
+
+  --leading-tight:  1.15;
+  --leading-normal: 1.35;
+  --leading-loose:  1.5;
+
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+}

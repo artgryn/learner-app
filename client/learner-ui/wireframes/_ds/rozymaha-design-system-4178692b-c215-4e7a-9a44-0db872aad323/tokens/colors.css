@@ -1,0 +1,65 @@
+/* Rozymaha — Color tokens
+   Warm, paper-like neutrals with a saturated terracotta primary and a
+   scientific sage-green for "known/correct" states. No purples, no gradients,
+   no gamified rainbow — palette stays warm + a little bit inky. */
+
+:root {
+  /* ---- base palette ---- */
+  --color-paper:        #FAF7F2; /* app background, warm off-white */
+  --color-surface:      #FFFFFF; /* cards, sheets */
+  --color-surface-sunk: #F1ECE2; /* inputs, wells, segmented control track */
+
+  --color-ink-900:      #2B2620; /* primary text, warm near-black */
+  --color-ink-700:      #4A4339;
+  --color-ink-500:      #6B6258; /* secondary text */
+  --color-ink-300:      #9C9285; /* placeholder / disabled text */
+  --color-ink-150:      #D8D1C4; /* hairlines on paper */
+  --color-ink-100:      #E7E1D5; /* hairlines on surface */
+
+  --color-terracotta-700: #A83E14;
+  --color-terracotta-600: #D9541F; /* brand primary — CTAs, active states */
+  --color-terracotta-500: #E2703F;
+  --color-terracotta-100: #FBE3D6; /* tinted backgrounds, badges */
+
+  --color-forest-700:   #274A38;
+  --color-forest-600:   #3F6B52; /* success / "known" / correct */
+  --color-forest-100:   #E1EAE1;
+
+  --color-gold-600:      #C9A227; /* highlight / streak-free progress marker */
+  --color-gold-100:      #F5EBC9;
+
+  --color-brick-700:     #7E271E;
+  --color-brick-600:     #B23A2E; /* error / "again" / destructive */
+  --color-brick-100:     #F5DEDA;
+
+  --color-sand-300:      #E7D9BE; /* tertiary surface, tag fill */
+  --color-sage-200:      #C9D9C8; /* tertiary surface, chart fill */
+
+  /* ---- semantic aliases ---- */
+  --bg-app:              var(--color-paper);
+  --bg-surface:          var(--color-surface);
+  --bg-surface-sunk:     var(--color-surface-sunk);
+  --bg-tag:              var(--color-sand-300);
+
+  --text-primary:        var(--color-ink-900);
+  --text-secondary:      var(--color-ink-500);
+  --text-placeholder:    var(--color-ink-300);
+  --text-on-accent:      #FFFFFF;
+
+  --border-hairline:     var(--color-ink-100);
+  --border-hairline-on-paper: var(--color-ink-150);
+
+  --accent-primary:      var(--color-terracotta-600);
+  --accent-primary-press: var(--color-terracotta-700);
+  --accent-primary-tint: var(--color-terracotta-100);
+
+  --state-success:       var(--color-forest-600);
+  --state-success-tint:  var(--color-forest-100);
+  --state-error:         var(--color-brick-600);
+  --state-error-tint:    var(--color-brick-100);
+  --state-highlight:     var(--color-gold-600);
+  --state-highlight-tint: var(--color-gold-100);
+
+  --chart-line:          var(--color-forest-600);
+  --chart-fill:          var(--color-sage-200);
+}

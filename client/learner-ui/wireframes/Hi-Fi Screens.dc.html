@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="stylesheet" href="_ds/rozymaha-design-system-4178692b-c215-4e7a-9a44-0db872aad323/tokens/colors.css">
+<link rel="stylesheet" href="_ds/rozymaha-design-system-4178692b-c215-4e7a-9a44-0db872aad323/tokens/typography.css">
+<link rel="stylesheet" href="_ds/rozymaha-design-system-4178692b-c215-4e7a-9a44-0db872aad323/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/rozymaha-design-system-4178692b-c215-4e7a-9a44-0db872aad323/tokens/base.css">
+<link rel="stylesheet" href="_ds/rozymaha-design-system-4178692b-c215-4e7a-9a44-0db872aad323/styles.css">
+<script src="_ds/rozymaha-design-system-4178692b-c215-4e7a-9a44-0db872aad323/_ds_bundle.js"></script>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body{margin:0;background:#efe9df;font-family:-apple-system,system-ui,sans-serif}
+  .hifi-wrap{padding:48px}
+  .hifi-group{margin-bottom:56px}
+  .hifi-h{font:600 13px ui-monospace,Menlo,monospace;color:#3a352c;letter-spacing:.5px;text-transform:uppercase;margin:0 0 18px}
+  .hifi-row{display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap}
+  .hifi-cap{margin-top:10px;text-align:center;font-size:13px;color:#6b6558}
+</style>
+</helmet>
+
+<div class="hifi-wrap">
+
+  <div class="hifi-group">
+    <div class="hifi-h">Home — session queue</div>
+    <div class="hifi-row">
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiHome" hint-size="100%,100%" tab="home"></x-import>
+        </x-import>
+        <div class="hifi-cap">Home</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hifi-group">
+    <div class="hifi-h">Generate flow</div>
+    <div class="hifi-row">
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiGeneratePrompt" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">1 · Prompt</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiGenerating" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">2 · Generating</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiReview" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">3 · Review &amp; save</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hifi-group">
+    <div class="hifi-h">Onboarding &amp; list browse</div>
+    <div class="hifi-row">
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiOnboardingLanguage" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">Onboarding — pick language</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiListBrowse" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">Browse other learners' lists</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiListProgress" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">List progress — mastery rings</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hifi-group">
+    <div class="hifi-h">Session task types</div>
+    <div class="hifi-row">
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiFlashcard" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">Flashcard</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiMultipleChoice" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">Multiple-choice translation</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiCollocation" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">Collocation choice</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiNearSynonym" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">Near-synonym discrimination</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiGapFill" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">Sentence gap-fill</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiFormsTeach" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">Word forms — teach</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiFormsTest" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">Word forms — test</div>
+      </div>
+      <div>
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx ./HiFiScreens.jsx" width="402px" height="874px" hint-size="402px,874px">
+          <x-import component-from-global-scope="HiFiScreens.HiFiLetterSpell" hint-size="100%,100%"></x-import>
+        </x-import>
+        <div class="hifi-cap">Letter-tile spelling</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+</body>
+</html>

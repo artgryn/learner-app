@@ -278,10 +278,10 @@
       ]
     },
     {
-      "name": "Session (stub)",
+      "name": "Session (real, DB-backed)",
       "item": [
         {
-          "name": "Create Session",
+          "name": "Create Session (returns items: introduce cards + exercises)",
           "request": {
             "method": "POST",
             "header": [],
@@ -293,13 +293,25 @@
           }
         },
         {
-          "name": "Complete Session",
+          "name": "Create Session (unknown enrollment -> 404)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enrollments/9999/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["enrollments", "9999", "sessions"]
+            }
+          }
+        },
+        {
+          "name": "Complete Session (use sessionId from Create Session response)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"results\": [\n    {\n      \"exerciseId\": \"ex_01\",\n      \"lexemeId\": 1,\n      \"exerciseType\": \"en_ett\",\n      \"formType\": null,\n      \"isCorrect\": true,\n      \"elapsedMs\": 1800\n    }\n  ]\n}",
+              "raw": "{\n  \"results\": [\n    {\n      \"itemId\": \"it_01\",\n      \"lexemeId\": 1,\n      \"exerciseType\": \"en_ett\",\n      \"formType\": null,\n      \"isCorrect\": true,\n      \"elapsedMs\": 1800\n    }\n  ]\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -310,13 +322,30 @@
           }
         },
         {
-          "name": "Submit Answers (incremental)",
+          "name": "Complete Session (unknown sessionId -> 404)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"results\": [\n    {\n      \"exerciseId\": \"ex_01\",\n      \"lexemeId\": 1,\n      \"exerciseType\": \"en_ett\",\n      \"formType\": null,\n      \"isCorrect\": true,\n      \"elapsedMs\": 1800\n    }\n  ]\n}",
+              "raw": "{\n  \"results\": []\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/unknown-session-id/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "unknown-session-id", "complete"]
+            }
+          }
+        },
+        {
+          "name": "Submit Answers (incremental, not implemented -> 501)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"results\": [\n    {\n      \"itemId\": \"it_01\",\n      \"lexemeId\": 1,\n      \"exerciseType\": \"en_ett\",\n      \"formType\": null,\n      \"isCorrect\": true,\n      \"elapsedMs\": 1800\n    }\n  ]\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {

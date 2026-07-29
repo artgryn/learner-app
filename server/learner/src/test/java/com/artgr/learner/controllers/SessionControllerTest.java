@@ -20,8 +20,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,31 +61,33 @@ class SessionControllerTest {
     }
 
     @Test
-    void deriveSessionGivesExactlyOneCardForTheNewWordBeforeItsFirstExercise() throws Exception {
+    void deriveSessionGivesExactlyOneCardForEachNewWordBeforeItsFirstExercise() throws Exception {
         String body = mockMvc.perform(post("/enrollments/1/sessions"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
         JsonNode items = objectMapper.readTree(body).get("items");
 
-        int introCount = 0;
-        int introIndex = -1;
-        int firstHusExerciseIndex = -1;
+        Map<Long, Integer> introIndexByLexeme = new HashMap<>();
+        Map<Long, Integer> firstExerciseIndexByLexeme = new HashMap<>();
         for (int i = 0; i < items.size(); i++) {
             JsonNode item = items.get(i);
             boolean isIntro = "introduce".equals(item.get("itemType").asText());
             long lexemeId = item.get("lexemeId").asLong();
             if (isIntro) {
-                introCount++;
-                assertEquals(1L, lexemeId, "only hus (never started) should get a card");
-                introIndex = i;
-            } else if (lexemeId == 1L && firstHusExerciseIndex < 0) {
-                firstHusExerciseIndex = i;
+                assertFalse(introIndexByLexeme.containsKey(lexemeId), "at most one card per word");
+                introIndexByLexeme.put(lexemeId, i);
+            } else {
+                firstExerciseIndexByLexeme.putIfAbsent(lexemeId, i);
             }
         }
 
-        assertEquals(1, introCount, "exactly one card - jag and gå are already started (review), hus is new");
-        assertTrue(introIndex >= 0 && firstHusExerciseIndex > introIndex, "card must precede hus's first exercise");
+        // every seeded word in list 1 (hus, gå, jag) is unstarted (fresh seed, no
+        // list_progress rows), so all three get an intro card before their first exercise.
+        assertEquals(Set.of(1L, 3L, 5L), introIndexByLexeme.keySet(), "hus, gå and jag are all new in the fresh seed");
+        introIndexByLexeme.forEach((lexemeId, introIndex) ->
+                assertTrue(firstExerciseIndexByLexeme.get(lexemeId) > introIndex,
+                        "card must precede lexeme " + lexemeId + "'s first exercise"));
     }
 
     @Test

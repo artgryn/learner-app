@@ -21,12 +21,6 @@ import java.util.stream.Collectors;
 @Service
 public class ProgressService {
 
-    // "≥3 spaced encounters across different sessions" is the only mastery
-    // signal documented (doc/app-info/MVP.md); used here as the threshold.
-    // Not an explicit product decision - revisit if that changes. Also used
-    // by SessionService to decide which started words are still "due".
-    public static final int MASTERY_THRESHOLD = 3;
-
     private final AccountRepository accountRepository;
     private final UserListRepository userListRepository;
     private final ListItemRepository listItemRepository;
@@ -64,7 +58,7 @@ public class ProgressService {
     }
 
     public int wordsMastered(Long userId, Long listId) {
-        return (int) listProgressRepository.countMastered(userId, listId, MASTERY_THRESHOLD);
+        return (int) listProgressRepository.countMastered(userId, listId, sessionProperties.getMasteryThreshold());
     }
 
     public int sessionsDone(Long userId, Long listId) {
@@ -94,7 +88,7 @@ public class ProgressService {
     }
 
     public int wordsKnown(Long userId) {
-        return (int) listProgressRepository.countDistinctMasteredLexemes(userId, MASTERY_THRESHOLD);
+        return (int) listProgressRepository.countDistinctMasteredLexemes(userId, sessionProperties.getMasteryThreshold());
     }
 
     public int streakDays(Long userId) {

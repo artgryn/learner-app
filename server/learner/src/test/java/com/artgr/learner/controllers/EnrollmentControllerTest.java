@@ -28,7 +28,7 @@ class EnrollmentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].listId").value(1))
-                .andExpect(jsonPath("$[0].wordsMastered").value(1))
+                .andExpect(jsonPath("$[0].wordsMastered").value(0))
                 .andExpect(jsonPath("$[0].totalWords").value(3));
     }
 
@@ -86,9 +86,9 @@ class EnrollmentControllerTest {
     }
 
     @Test
-    void progressReturnsSeededListProgress() throws Exception {
+    void progressReturnsEmptyForFreshEnrollment() throws Exception {
         mockMvc.perform(get("/enrollments/1/progress"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(0));
     }
 }
