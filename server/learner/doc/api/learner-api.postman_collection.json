@@ -1,0 +1,332 @@
+{
+  "info": {
+    "name": "Learner API",
+    "description": "Manual smoke-test requests, mirrors doc/api/curl-requests.md. Import via Bruno: Import Collection -> Postman Collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "Catalog (real, DB-backed)",
+      "item": [
+        {
+          "name": "Get Languages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/languages",
+              "host": ["{{baseUrl}}"],
+              "path": ["languages"]
+            }
+          }
+        },
+        {
+          "name": "Get Lists (sv from en)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lists?target=sv&base=en",
+              "host": ["{{baseUrl}}"],
+              "path": ["lists"],
+              "query": [
+                { "key": "target", "value": "sv" },
+                { "key": "base", "value": "en" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Lists (no translation coverage -> [])",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lists?target=sv&base=ru",
+              "host": ["{{baseUrl}}"],
+              "path": ["lists"],
+              "query": [
+                { "key": "target", "value": "sv" },
+                { "key": "base", "value": "ru" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get List Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lists/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["lists", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get List Detail (unknown -> 404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lists/9999",
+              "host": ["{{baseUrl}}"],
+              "path": ["lists", "9999"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Progress (real, DB-backed)",
+      "item": [
+        {
+          "name": "Get Home",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/me/home",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "home"]
+            }
+          }
+        },
+        {
+          "name": "Get Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/me/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["me", "stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth (stub)",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"dummy-refresh-token\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enrollment (real, DB-backed)",
+      "item": [
+        {
+          "name": "Enroll (list 1, already enrolled -> 200)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseLang\": \"en\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/lists/1/enroll",
+              "host": ["{{baseUrl}}"],
+              "path": ["lists", "1", "enroll"]
+            }
+          }
+        },
+        {
+          "name": "Enroll (list 2, not yet enrolled -> 201)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseLang\": \"en\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/lists/2/enroll",
+              "host": ["{{baseUrl}}"],
+              "path": ["lists", "2", "enroll"]
+            }
+          }
+        },
+        {
+          "name": "Get Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enrollments",
+              "host": ["{{baseUrl}}"],
+              "path": ["enrollments"]
+            }
+          }
+        },
+        {
+          "name": "Get Enrollment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enrollments/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["enrollments", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Enrollment (unknown -> 404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enrollments/9999",
+              "host": ["{{baseUrl}}"],
+              "path": ["enrollments", "9999"]
+            }
+          }
+        },
+        {
+          "name": "Unenroll",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enrollments/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["enrollments", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Enrollment Progress",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enrollments/1/progress",
+              "host": ["{{baseUrl}}"],
+              "path": ["enrollments", "1", "progress"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Session (stub)",
+      "item": [
+        {
+          "name": "Create Session",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enrollments/1/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["enrollments", "1", "sessions"]
+            }
+          }
+        },
+        {
+          "name": "Complete Session",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"results\": [\n    {\n      \"exerciseId\": \"ex_01\",\n      \"lexemeId\": 1,\n      \"exerciseType\": \"en_ett\",\n      \"formType\": null,\n      \"isCorrect\": true,\n      \"elapsedMs\": 1800\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/a3f2c9d1/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "a3f2c9d1", "complete"]
+            }
+          }
+        },
+        {
+          "name": "Submit Answers (incremental)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"results\": [\n    {\n      \"exerciseId\": \"ex_01\",\n      \"lexemeId\": 1,\n      \"exerciseType\": \"en_ett\",\n      \"formType\": null,\n      \"isCorrect\": true,\n      \"elapsedMs\": 1800\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/a3f2c9d1/answers",
+              "host": ["{{baseUrl}}"],
+              "path": ["sessions", "a3f2c9d1", "answers"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

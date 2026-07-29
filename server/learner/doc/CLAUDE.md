@@ -93,11 +93,34 @@ Citation form (shown when presenting a bare lexeme) is derived by pos convention
 noun→indef_sg, verb→infinitive, pronoun→subject, number→base, adjective→utrum.
 No stored flag.
 
+## Session items and interleaving
+
+- A session response is an ordered `items` array, NOT a bare exercise list. Each
+  item is discriminated by `itemType`: `introduce` (a no-action teaching card) or
+  `exercise` (a graded task).
+- **`introduce` is an itemType, NOT an exerciseType.** It never enters the
+  `exercise_type` Postgres enum, is never graded, and never produces an `attempt`
+  or `list_progress` row. Viewing a card writes nothing.
+- An introduce card is assembled from lexeme + word_form + translation (composed
+  citation `word` with article/marker, translation in the enrollment base_lang,
+  full labelled paradigm). NO new table/column — it is a read/generation concern.
+- A word gets an intro card when it has no `list_progress` row yet ("not started").
+  Its first real exercise creates that row.
+- **The ORDER of items encodes the pedagogy** and is a server-side scheduling
+  decision the client must not reorder: intro card just-in-time before a word's
+  first task; that word's tasks then spaced and INTERLEAVED with other words'
+  tasks. Do NOT bunch all of one word's tasks after its intro (that is massed
+  practice; the point is spacing). Reference flow for 3 words:
+  w1-intro -> w1-t1 -> w1-t2 -> w2-intro -> w2-t1 -> w1-t3 -> w2-t2 -> w3-intro ...
+  This is the spec for session-building ("split list into sessions").
+- Item identifier is `itemId`. Results submitted in /complete reference `itemId`
+  and come only from exercise items (intro cards are never submitted).
+
 ## Exercise generation rules
 
 - Exercises are server-generated and fully built. Client renders + reports only.
-- Each exercise = envelope (exerciseId, exerciseType, lexemeId, formType) +
-  prompt {text, lang} + exercise {type-specific payload + correct answer}.
+- Each exercise item = envelope (itemId, itemType=exercise, exerciseType, lexemeId,
+  formType) + prompt {text, lang} + exercise {type-specific payload + correct answer}.
 - `lang` lives in `prompt` (and `optionsLang` in the payload when the answer side
   differs) — NEVER at root, because a translation exercise spans two languages.
 - Instruction labels are constant-per-type and localized CLIENT-side — never sent
@@ -132,6 +155,45 @@ No stored flag.
 - Errors: { error: { status, code, message, traceId } }. Clients branch on
   `code` (stable string), never on `message`.
 
+**Current implementation status (as of 2026-07-28): auth is intentionally not
+built yet.** `AuthController` is a stub (canned `TokenPair`, no real
+register/login/refresh/logout) and there is no `security/` package content —
+do not touch either while implementing other features; this is a deliberate,
+user-directed sequencing decision, not an oversight. Endpoints that the API
+design says should read the user id from the token instead resolve it via
+`CurrentUserProvider` (`service/CurrentUserProvider.java`), a one-method seam
+with a single implementation, `StubCurrentUserProvider`, that always returns
+the seeded demo account id. Every controller/service needing "current user"
+should depend on `CurrentUserProvider`, never a hardcoded id inline — when
+real auth lands, only `StubCurrentUserProvider` gets replaced (with a
+`SecurityContext`/token-subject-backed implementation); no call site changes.
+
+**Endpoint implementation status:** Catalog, Progress, and Enrollment are
+real, DB-backed. Auth is a stub. Session (`/enrollments/{listId}/sessions`,
+`/sessions/{sessionId}/*`) has scaffolding only (reverted 2026-07-28 after a
+full implementation was tried and rolled back — see git history if the
+generation logic needs re-deriving): `SessionController` delegates to
+`SessionService`, which has `ListItemRepository`/`ListProgressRepository`/
+`WordFormRepository`/`LexemeRepository`/`TranslationRepository`/
+`AttemptRepository`/`LearningSessionRepository`/`AccountRepository`/
+`WordListRepository`/`EnrollmentService` wired into its constructor, but
+every method still returns the same canned `SessionResponse`/
+`CompleteResponse`/`WordProgress` values the controller used to hardcode
+directly — see the `// TODO` on each method.
+
+Enrollment specifics: `/lists/{listId}/enroll` is idempotent by
+(userId, listId) — `EnrollmentService.enroll` returns `EnrollResult(enrollment,
+created)` so the controller can answer 200 (existing) vs 201 (created), per
+`doc/api/swagger.yaml`. `DELETE /enrollments/{listId}` deletes the `user_list`
+row outright (cascades to `sessions`/`list_progress` via the DB's own FK
+`ON DELETE CASCADE`); `attempt` rows are deliberately left behind as a
+denormalized historical log, independent of enrollment lifecycle (see
+`doc/app-info/Data/attempt.md`). The `UserList` → `Enrollment` DTO mapping
+(wordsMastered, sessions summary, lastActiveAt) is shared between
+`EnrollmentController` and `ProgressController` via `EnrollmentMapper`
+(`data/mappers/EnrollmentMapper.java`), which itself delegates the derived
+fields to `ProgressService` — don't duplicate that mapping in a third place.
+
 ## Reference files in this repo
 
 - `openapi.yaml` — full API spec (OpenAPI 3.1), source of truth for endpoints and
@@ -155,3 +217,6 @@ No stored flag.
   sessions — all were considered and deliberately dropped.
 - Swedish specifics: cite nouns as "en/ett + lemma", verbs as "att + lemma";
   never surface a bare noun without its article.
+- Don't implement auth/security (see "Current implementation status" above).
+  Need the current user? Inject `CurrentUserProvider`, don't hardcode an id
+  or add ad-hoc auth logic to get one.

@@ -50,7 +50,7 @@ App-only REST API (React Native client, Spring Boot server). No public API. See 
 
 |Method|Path|Purpose|
 |---|---|---|
-|POST|`/enrollments/{listId}/sessions`|derive a session on demand → return fully-built exercises (with answers)|
+|POST|`/enrollments/{listId}/sessions`|derive a session on demand → return an ordered items array (intro cards + exercises, with answers)|
 |POST|`/sessions/{sessionId}/complete`|close the session; body carries the results array (INSERT attempts + UPSERT progress + INSERT sessions row, one transaction)|
 |POST|`/sessions/{sessionId}/answers`|_optional_ incremental sync of a results batch during a long session|
 
@@ -68,11 +68,52 @@ A session is **created (POST), not fetched** — it is computed fresh from due +
 
 ---
 
-## Payload structure
+## Session items
 
-Three layers per exercise:
+A session response is an ordered `items` array, not a bare exercise list. Each item is one of two kinds, discriminated by `itemType`:
 
-- **envelope** — language-neutral metadata (`exerciseId`, `exerciseType`, `lexemeId`, `formType`)
+- **`introduce`** — a no-action teaching card (word + translation + full paradigm). The client renders it with a **Next** button. Never graded, never logged.
+- **`exercise`** — a graded task (the payload structure below).
+
+`itemType` (what the client renders) is distinct from `exerciseType` (what gets graded and logged). **`introduce` is NOT an `exerciseType`** — it never enters the `exercise_type` enum, and it never produces an [[attempt]] row.
+
+The **order of `items` encodes the pedagogy**: an intro card appears just-in-time before a new word's first task; that word's tasks are then spaced and interleaved with other words' tasks. The client renders the array top to bottom and does not reorder. Example flow for three words: `w1-intro → w1-t1 → w1-t2 → w2-intro → w2-t1 → w1-t3 → w2-t2 → w3-intro …`. A word gets an intro card when it has no [[list_progress]] row yet (the "not started" signal).
+
+### Introduce card
+
+Carries the composed citation `word` (article/marker included, server-side), the `translation` in the enrollment base language, and the full labelled paradigm. Assembled from `lexeme` + `word_form` + `translation` — no new storage, nothing logged on view.
+
+```json
+{
+  "itemId": "it_01",
+  "itemType": "introduce",
+  "lexemeId": 3,
+  "card": {
+    "word": "att gå",
+    "lemma": "gå",
+    "pos": "verb",
+    "gender": null,
+    "translation": "to go, to walk",
+    "forms": [
+      { "formType": "infinitive", "form": "gå" },
+      { "formType": "present", "form": "går" },
+      { "formType": "preteritum", "form": "gick" },
+      { "formType": "supine", "form": "gått" },
+      { "formType": "imperative", "form": "gå" },
+      { "formType": "present_participle", "form": "gående" },
+      { "formType": "past_participle", "form": "gången" }
+    ]
+  }
+}
+```
+
+`forms` uses `formType` codes, not display labels — the client localizes labels. Order is paradigm order.
+
+## Exercise payload structure
+
+An `exercise` item has three layers:
+
+- **envelope** — `itemId`, `itemType: exercise`, `exerciseType`, `lexemeId`, `formType`
 - **prompt** — what the user is shown (the question stem): `{ text, lang }`
 - **exercise** — the answer mechanism (options / letters) + the correct answer
 
@@ -80,15 +121,79 @@ Three layers per exercise:
 
 `prompt` is minimal: `{ text, lang }`. Instruction labels ("Give the base form") are constant per `exerciseType` and localized by the client from its own UI locale — not sent in the payload. `formType` (in the envelope) tells the client which form is asked when it needs to show that.
 
-### Session response
+### Session response (mixed items)
 
 ```json
 {
-  "sessionId": "a3f2...",
+  "sessionId": "s_a3f2c9",
   "listId": 1,
-  "exercises": []
+  "items": [
+    {
+      "itemId": "it_01",
+      "itemType": "introduce",
+      "lexemeId": 3,
+      "card": {
+        "word": "att gå",
+        "lemma": "gå",
+        "pos": "verb",
+        "gender": null,
+        "translation": "to go, to walk",
+        "forms": [
+          { "formType": "infinitive", "form": "gå" },
+          { "formType": "present", "form": "går" },
+          { "formType": "preteritum", "form": "gick" },
+          { "formType": "supine", "form": "gått" }
+        ]
+      }
+    },
+    {
+      "itemId": "it_02",
+      "itemType": "exercise",
+      "lexemeId": 3,
+      "exerciseType": "translate",
+      "formType": null,
+      "prompt": { "text": "gå", "lang": "sv" },
+      "exercise": {
+        "optionsLang": "en",
+        "options": ["to go", "to run", "to stand", "to sit"],
+        "correctAnswer": "to go"
+      }
+    },
+    {
+      "itemId": "it_03",
+      "itemType": "introduce",
+      "lexemeId": 1,
+      "card": {
+        "word": "ett hus",
+        "lemma": "hus",
+        "pos": "noun",
+        "gender": "ett",
+        "translation": "house",
+        "forms": [
+          { "formType": "indef_sg", "form": "hus" },
+          { "formType": "def_sg", "form": "huset" },
+          { "formType": "indef_pl", "form": "hus" },
+          { "formType": "def_pl", "form": "husen" }
+        ]
+      }
+    },
+    {
+      "itemId": "it_04",
+      "itemType": "exercise",
+      "lexemeId": 1,
+      "exerciseType": "en_ett",
+      "formType": null,
+      "prompt": { "text": "hus", "lang": "sv" },
+      "exercise": {
+        "options": ["en", "ett"],
+        "correctAnswer": "ett"
+      }
+    }
+  ]
 }
 ```
+
+Intro items carry a `card` and no `exerciseType`/`prompt`/`exercise`; exercise items carry `exerciseType`/`prompt`/`exercise` and no `card`. The client switches on `itemType`.
 
 ### Per-type `exercise` object
 
@@ -98,7 +203,8 @@ Each type declares exactly the answer shape it needs. `options` is the pre-shuff
 
 ```json
 {
-  "exerciseId": "ex_01",
+  "itemId": "it_01",
+  "itemType": "exercise",
   "exerciseType": "en_ett",
   "lexemeId": 1,
   "formType": null,
@@ -120,7 +226,8 @@ Each type declares exactly the answer shape it needs. `options` is the pre-shuff
 
 ```json
 {
-  "exerciseId": "ex_02",
+  "itemId": "it_02",
+  "itemType": "exercise",
   "exerciseType": "translate",
   "lexemeId": 1,
   "formType": null,
@@ -145,7 +252,8 @@ Each type declares exactly the answer shape it needs. `options` is the pre-shuff
 
 ```json
 {
-  "exerciseId": "ex_03",
+  "itemId": "it_03",
+  "itemType": "exercise",
   "exerciseType": "assemble",
   "lexemeId": 3,
   "formType": "preteritum",
@@ -175,7 +283,8 @@ Letters are longer than the answer (~1.5x), shuffled, may contain duplicates; tr
 
 ```json
 {
-  "exerciseId": "ex_04",
+  "itemId": "it_04",
+  "itemType": "exercise",
   "exerciseType": "base_form",
   "lexemeId": 3,
   "formType": "preteritum",
@@ -199,7 +308,8 @@ Letters are longer than the answer (~1.5x), shuffled, may contain duplicates; tr
 
 ```json
 {
-  "exerciseId": "ex_05",
+  "itemId": "it_05",
+  "itemType": "exercise",
   "exerciseType": "produce_form",
   "lexemeId": 3,
   "formType": "preteritum",
@@ -223,7 +333,8 @@ Letters are longer than the answer (~1.5x), shuffled, may contain duplicates; tr
 
 ```json
 {
-  "exerciseId": "ex_06",
+  "itemId": "it_06",
+  "itemType": "exercise",
   "exerciseType": "multi_select",
   "lexemeId": 3,
   "formType": null,
@@ -256,7 +367,7 @@ Distractors for choice types are **same target-language, same pos, near freq_ran
 {
   "results": [
     {
-      "exerciseId": "ex_03",
+      "itemId": "it_03",
       "lexemeId": 3,
       "exerciseType": "assemble",
       "formType": "preteritum",
@@ -264,7 +375,7 @@ Distractors for choice types are **same target-language, same pos, near freq_ran
       "elapsedMs": 4200
     },
     {
-      "exerciseId": "ex_01",
+      "itemId": "it_01",
       "lexemeId": 1,
       "exerciseType": "en_ett",
       "formType": null,
@@ -363,7 +474,7 @@ sequenceDiagram
     C->>A: POST /enrollments/{id}/sessions
     A->>D: query due + new words
     D-->>A: words + forms + translations
-    A-->>C: 200 exercises WITH answers
+    A-->>C: 200 items (intro cards + exercises)
     loop per exercise (offline, no network)
         C->>C: render, grade vs answer, store result
     end

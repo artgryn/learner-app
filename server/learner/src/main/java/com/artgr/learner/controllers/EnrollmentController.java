@@ -1,10 +1,13 @@
 package com.artgr.learner.controllers;
 
-import com.artgr.learner.data.enums.EnrollmentStatus;
-import com.artgr.learner.data.enums.LanguageCode;
+import com.artgr.learner.data.entity.ListProgress;
+import com.artgr.learner.data.entity.UserList;
+import com.artgr.learner.data.mappers.EnrollmentMapper;
 import com.artgr.learner.data.presentation.EnrollRequest;
 import com.artgr.learner.data.presentation.Enrollment;
 import com.artgr.learner.data.presentation.WordProgress;
+import com.artgr.learner.service.CurrentUserProvider;
+import com.artgr.learner.service.EnrollmentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,51 +17,68 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 @RestController
 public class EnrollmentController {
 
+    private final EnrollmentService enrollmentService;
+    private final CurrentUserProvider currentUserProvider;
+    private final EnrollmentMapper enrollmentMapper;
+
+    public EnrollmentController(EnrollmentService enrollmentService, CurrentUserProvider currentUserProvider, EnrollmentMapper enrollmentMapper) {
+        this.enrollmentService = enrollmentService;
+        this.currentUserProvider = currentUserProvider;
+        this.enrollmentMapper = enrollmentMapper;
+    }
+
     @PostMapping("/lists/{listId}/enroll")
     public ResponseEntity<Enrollment> enroll(@PathVariable Long listId, @RequestBody EnrollRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(dummyEnrollment(listId));
+        Long userId = currentUserProvider.currentUserId();
+        EnrollmentService.EnrollResult result = enrollmentService.enroll(userId, listId, request.baseLang());
+        HttpStatus status = result.created() ? HttpStatus.CREATED : HttpStatus.OK;
+        return ResponseEntity.status(status).body(enrollmentMapper.toDto(result.enrollment()));
     }
 
     @GetMapping("/enrollments")
     public ResponseEntity<List<Enrollment>> enrollments() {
-        return ResponseEntity.ok(List.of(dummyEnrollment(1L)));
+        Long userId = currentUserProvider.currentUserId();
+        List<Enrollment> body = enrollmentService.enrollments(userId).stream()
+                .map(enrollmentMapper::toDto)
+                .toList();
+        return ResponseEntity.ok(body);
     }
 
     @GetMapping("/enrollments/{listId}")
     public ResponseEntity<Enrollment> enrollment(@PathVariable Long listId) {
-        return ResponseEntity.ok(dummyEnrollment(listId));
+        Long userId = currentUserProvider.currentUserId();
+        UserList enrollment = enrollmentService.requireEnrollment(userId, listId);
+        return ResponseEntity.ok(enrollmentMapper.toDto(enrollment));
     }
 
     @DeleteMapping("/enrollments/{listId}")
     public ResponseEntity<Void> unenroll(@PathVariable Long listId) {
+        Long userId = currentUserProvider.currentUserId();
+        enrollmentService.unenroll(userId, listId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/enrollments/{listId}/progress")
     public ResponseEntity<List<WordProgress>> progress(@PathVariable Long listId) {
-        return ResponseEntity.ok(List.of(
-                new WordProgress(5L, 3, 3, 0, null),
-                new WordProgress(3L, 1, 0, 1, null)
-        ));
+        Long userId = currentUserProvider.currentUserId();
+        List<WordProgress> body = enrollmentService.progress(userId, listId).stream()
+                .map(this::toWordProgress)
+                .toList();
+        return ResponseEntity.ok(body);
     }
 
-    private Enrollment dummyEnrollment(Long listId) {
-        return new Enrollment(
-                listId,
-                "Swedish Basics",
-                LanguageCode.en,
-                LanguageCode.sv,
-                EnrollmentStatus.active,
-                1,
-                3,
-                new Enrollment.SessionsSummary(1, 8),
-                OffsetDateTime.parse("2026-07-26T18:40:00Z")
+    private WordProgress toWordProgress(ListProgress progress) {
+        return new WordProgress(
+                progress.getId().getLexemeId(),
+                progress.getTimesPracticed(),
+                progress.getCorrect(),
+                progress.getWrong(),
+                progress.getDue()
         );
     }
 }

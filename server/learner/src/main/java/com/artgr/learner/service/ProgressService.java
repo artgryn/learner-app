@@ -8,6 +8,7 @@ import com.artgr.learner.data.repository.ListItemRepository;
 import com.artgr.learner.data.repository.ListProgressRepository;
 import com.artgr.learner.data.repository.UserListRepository;
 import com.artgr.learner.exceptions.NotFoundException;
+import com.artgr.learner.properties.SessionProperties;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,32 +23,31 @@ public class ProgressService {
 
     // "≥3 spaced encounters across different sessions" is the only mastery
     // signal documented (doc/app-info/MVP.md); used here as the threshold.
-    // Not an explicit product decision - revisit if that changes.
-    private static final int MASTERY_THRESHOLD = 3;
-
-    // No fixed session size is specified anywhere in doc/app-info/ - sessions
-    // are "6-10 min", not a word count. Placeholder until real session
-    // derivation (learning_plan) exists to compute this properly.
-    private static final int WORDS_PER_SESSION = 5;
+    // Not an explicit product decision - revisit if that changes. Also used
+    // by SessionService to decide which started words are still "due".
+    public static final int MASTERY_THRESHOLD = 3;
 
     private final AccountRepository accountRepository;
     private final UserListRepository userListRepository;
     private final ListItemRepository listItemRepository;
     private final ListProgressRepository listProgressRepository;
     private final LearningSessionRepository learningSessionRepository;
+    private final SessionProperties sessionProperties;
 
     public ProgressService(
             AccountRepository accountRepository,
             UserListRepository userListRepository,
             ListItemRepository listItemRepository,
             ListProgressRepository listProgressRepository,
-            LearningSessionRepository learningSessionRepository
+            LearningSessionRepository learningSessionRepository,
+            SessionProperties sessionProperties
     ) {
         this.accountRepository = accountRepository;
         this.userListRepository = userListRepository;
         this.listItemRepository = listItemRepository;
         this.listProgressRepository = listProgressRepository;
         this.learningSessionRepository = learningSessionRepository;
+        this.sessionProperties = sessionProperties;
     }
 
     public Account requireAccount(Long userId) {
@@ -73,7 +73,7 @@ public class ProgressService {
 
     public int estimatedTotalSessions(Long listId) {
         int words = totalWords(listId);
-        return (int) Math.ceil(words / (double) WORDS_PER_SESSION);
+        return (int) Math.ceil(words / (double) sessionProperties.getWordsPerSession());
     }
 
     public OffsetDateTime lastActiveAt(UserList enrollment) {

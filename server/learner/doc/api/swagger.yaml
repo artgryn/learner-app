@@ -242,14 +242,16 @@ paths:
       tags: [Session]
       summary: Derive a session on demand
       description: >
-        Computes the next session fresh from due + new words and returns fully
-        built exercises WITH their correct answers (client-side grading).
+        Computes the next session fresh from due + new words and returns an ordered
+        `items` array mixing introduce cards (new words, just-in-time) and fully
+        built exercises WITH their correct answers (client-side grading). The order
+        encodes spacing/interleaving; the client renders top to bottom.
         A session is created, not fetched - there is no GET.
       parameters:
         - $ref: '#/components/parameters/ListId'
       responses:
         '200':
-          description: Session with exercises
+          description: Session with ordered items (intro cards + exercises)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SessionResponse' }
@@ -437,26 +439,79 @@ components:
     # ---- session response ----
     SessionResponse:
       type: object
-      required: [sessionId, listId, exercises]
+      required: [sessionId, listId, items]
       properties:
         sessionId: { type: string }
         listId: { type: integer, format: int64 }
-        exercises:
+        items:
           type: array
-          items: { $ref: '#/components/schemas/Exercise' }
+          description: >
+            Ordered, heterogeneous sequence the client renders top to bottom.
+            The ORDER encodes the pedagogy (just-in-time intro cards, spaced and
+            interleaved exercises); the client does not reorder.
+          items: { $ref: '#/components/schemas/SessionItem' }
 
-    # ---- exercise: shared envelope + polymorphic payload ----
+    # ---- session item: introduce card OR exercise, discriminated by itemType ----
+    SessionItem:
+      description: >
+        A thing to show the user. itemType 'introduce' = a no-action teaching card
+        (render + Next, never graded/logged). itemType 'exercise' = a graded task.
+        itemType (what the client renders) is distinct from exerciseType (what gets
+        graded/logged); introduce is NOT an exerciseType.
+      oneOf:
+        - $ref: '#/components/schemas/IntroduceItem'
+        - $ref: '#/components/schemas/ExerciseItem'
+      discriminator:
+        propertyName: itemType
+        mapping:
+          introduce: '#/components/schemas/IntroduceItem'
+          exercise: '#/components/schemas/ExerciseItem'
+
+    # ---- introduce card ----
+    IntroduceItem:
+      type: object
+      required: [itemId, itemType, lexemeId, card]
+      properties:
+        itemId: { type: string }
+        itemType: { type: string, enum: [introduce] }
+        lexemeId: { type: integer, format: int64 }
+        card: { $ref: '#/components/schemas/IntroduceCard' }
+    IntroduceCard:
+      type: object
+      required: [word, lemma, pos, translation, forms]
+      description: >
+        Word (citation form, article/marker composed server-side), translation in
+        the enrollment base language, and the full labelled paradigm. Assembled from
+        lexeme + word_form + translation; no new storage.
+      properties:
+        word: { type: string, example: att gå, description: Citation form, ready to render. }
+        lemma: { type: string, example: gå }
+        pos: { type: string, example: verb }
+        gender: { type: string, nullable: true, example: null, description: en/ett for Swedish nouns. }
+        translation: { type: string, example: to go, to walk }
+        forms:
+          type: array
+          description: Full paradigm in paradigm order; formType codes, not display labels.
+          items:
+            type: object
+            required: [formType, form]
+            properties:
+              formType: { type: string, example: preteritum }
+              form: { type: string, example: gick }
+
+    # ---- exercise item: shared envelope + polymorphic payload ----
     Prompt:
       type: object
       required: [text, lang]
       properties:
         text: { type: string, example: hus }
         lang: { type: string, example: sv }
-    Exercise:
+    ExerciseItem:
       type: object
-      required: [exerciseId, exerciseType, lexemeId, prompt, exercise]
+      required: [itemId, itemType, exerciseType, lexemeId, prompt, exercise]
       properties:
-        exerciseId: { type: string }
+        itemId: { type: string }
+        itemType: { type: string, enum: [exercise] }
         exerciseType: { $ref: '#/components/schemas/ExerciseType' }
         lexemeId: { type: integer, format: int64 }
         formType:
@@ -531,11 +586,12 @@ components:
           example: [går, gick, gått]
 
     # ---- result submission ----
+    # Only exercise items produce results; introduce cards are never submitted.
     Result:
       type: object
-      required: [exerciseId, lexemeId, exerciseType, isCorrect]
+      required: [itemId, lexemeId, exerciseType, isCorrect]
       properties:
-        exerciseId: { type: string }
+        itemId: { type: string, description: itemId of the exercise item being answered. }
         lexemeId: { type: integer, format: int64 }
         exerciseType: { $ref: '#/components/schemas/ExerciseType' }
         formType: { type: string, nullable: true }

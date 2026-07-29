@@ -12,3 +12,4 @@
 - Which types a word can do is a **data precondition** (e.g. en/ett requires `pos=noun` + `gender` not null; assemble/produce_form require a [[word_form]]).
 - A [[list]] may restrict types via `allowed_exercises`. Generated set = list's allowed types ∩ what each word supports.
 - Exercise names align with the `exercise_type` enum: `en_ett, assemble, translate, base_form, produce_form, multi_select` (+ sentence-cloze later).
+- **Introduce card is NOT an exercise.** It is a separate `itemType` (introduce) in the session `items` array — a no-action teaching card (word + translation + all forms, Next only), never graded/logged, never in the `exercise_type` enum. See [[API]].
