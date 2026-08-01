@@ -5,7 +5,7 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" }
+    { "key": "baseUrl", "value": "http://localhost:8080/v1" }
   ],
   "item": [
     {
@@ -78,6 +78,18 @@
               "path": ["lists", "9999"]
             }
           }
+        },
+        {
+          "name": "Get Language Pairs (secured counterpart to Public Init)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/language-pairs",
+              "host": ["{{baseUrl}}"],
+              "path": ["language-pairs"]
+            }
+          }
         }
       ]
     },
@@ -111,10 +123,10 @@
       ]
     },
     {
-      "name": "Auth (stub)",
+      "name": "Auth (register/reset real, login/refresh/logout stub)",
       "item": [
         {
-          "name": "Register",
+          "name": "Register (creates account, emails confirmation code)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -131,7 +143,24 @@
           }
         },
         {
-          "name": "Login",
+          "name": "Register duplicate email (-> 409 EMAIL_TAKEN)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login (stub - always succeeds, does not verify password)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -148,7 +177,7 @@
           }
         },
         {
-          "name": "Refresh",
+          "name": "Refresh (stub)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -165,7 +194,7 @@
           }
         },
         {
-          "name": "Logout",
+          "name": "Logout (stub)",
           "request": {
             "method": "POST",
             "header": [],
@@ -173,6 +202,171 @@
               "raw": "{{baseUrl}}/auth/logout",
               "host": ["{{baseUrl}}"],
               "path": ["auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Reset - Request code (always 204, never leaks account existence)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset/request",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset", "request"]
+            }
+          }
+        },
+        {
+          "name": "Reset - Confirm with code (use code from server logs - LoggingEmailService)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"code\": \"1234\",\n  \"newPassword\": \"newpassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset", "confirm"]
+            }
+          }
+        },
+        {
+          "name": "Reset - Confirm with wrong code (-> 400 INVALID_OR_EXPIRED_CODE)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"code\": \"0000\",\n  \"newPassword\": \"newpassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset", "confirm"]
+            }
+          }
+        },
+        {
+          "name": "Reset - Request link (code-less; also sends fraud-notification email)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset/link",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset", "link"]
+            }
+          }
+        },
+        {
+          "name": "Reset - Confirm with link token (use token from server logs)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"token\": \"<paste token here>\",\n  \"newPassword\": \"viatoken123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset", "confirm"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Account (real, DB-backed)",
+      "item": [
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["me"]
+            }
+          }
+        },
+        {
+          "name": "Update Me (name + learning pair)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Demo User\",\n  \"learnBaseLang\": \"en\",\n  \"learnTargetLang\": \"sv\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["me"]
+            }
+          }
+        },
+        {
+          "name": "Update Me - unsupported pair (-> 400 UNSUPPORTED_PAIR)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"learnBaseLang\": \"sv\",\n  \"learnTargetLang\": \"en\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["me"]
+            }
+          }
+        },
+        {
+          "name": "Delete Me (cascades user_list/list_progress/sessions/attempt)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public (no auth)",
+      "item": [
+        {
+          "name": "Get Public Init (bootstrap data - languagePairs today, more later)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/init",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "init"]
             }
           }
         }
@@ -199,7 +393,7 @@
           }
         },
         {
-          "name": "Enroll (list 2, not yet enrolled -> 201)",
+          "name": "Enroll (list 2 - one active enrollment per user, this EVICTS list 1 -> 201)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -212,6 +406,23 @@
               "raw": "{{baseUrl}}/lists/2/enroll",
               "host": ["{{baseUrl}}"],
               "path": ["lists", "2", "enroll"]
+            }
+          }
+        },
+        {
+          "name": "Re-enroll list 1 (list 1 was evicted, not completed, so this recreates it -> 201)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseLang\": \"en\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/lists/1/enroll",
+              "host": ["{{baseUrl}}"],
+              "path": ["lists", "1", "enroll"]
             }
           }
         },
@@ -305,7 +516,7 @@
           }
         },
         {
-          "name": "Complete Session (use sessionId from Create Session response)",
+          "name": "Complete Session (use sessionId from Create Session response; may auto-complete the list if all words are now mastered)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],

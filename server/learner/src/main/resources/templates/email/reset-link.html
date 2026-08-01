@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Reset your password</title>
+</head>
+<body>
+    <p>Hi <span th:text="${name} ?: 'there'">there</span>,</p>
+    <p>Click the link below to reset your password. It expires soon, so use it right away:</p>
+    <p><a th:href="${link}" th:text="${link}">Reset link</a></p>
+    <p>If you didn't request this, you can ignore this email - your password won't change.</p>
+</body>
+</html>

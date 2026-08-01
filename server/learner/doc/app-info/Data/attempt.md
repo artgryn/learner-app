@@ -16,7 +16,7 @@ Append-only log. One row per answered exercise. Never updated.
 **Index:** (`user_id`, `created_at`)
 
 **Notes**
-- Per exercise the server does: **1 INSERT here + 1 UPDATE on [[list_progress]]**. The session row is NOT updated per exercise.
+- Per exercise the server does: **1 INSERT here + 1 UPSERT on [[list_progress]]** (the progress row is created lazily on first practice, then incremented). The session row is NOT updated per exercise; it is inserted once at `/complete`.
 - `form_type` records which form was tested (e.g. `preteritum`). Under **Option A** progress is counted on the lexeme, but logging form-level here keeps per-form scheduling (Option B) possible later without data loss.
 - Source of truth for stats (mistake patterns, per-form difficulty, future FSRS re-fit). [[list_progress]] is a maintained summary derived from these.
 - **Pruning:** on list completion, raw attempts for that list may be deleted (keep the completion record in [[user_list]]). Cheap growth (~11 MB/user/year); partition by month / prune later if needed.

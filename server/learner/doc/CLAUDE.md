@@ -82,9 +82,28 @@ Key relationships and rules:
   exercise_type[] NULL=all)`.
 - `exercise_type` IS a native Postgres enum (small, closed, app-controlled):
   en_ett, assemble, translate, base_form, produce_form, multi_select.
+- `account(id, email, password_hash, name, ui_lang DEFAULT 'en', learn_base_lang,
+  learn_target_lang, status DEFAULT 'free', created_at)`. `password_hash` (BCrypt)
+  is set only by `POST /auth/register` / `/auth/reset/confirm` — auth stays
+  otherwise stubbed (login never checks it); never returned by any DTO.
+  `learn_base_lang`/`learn_target_lang` are the account's DEFAULT learning pair
+  (catalog filter + enroll pre-fill), validated against `app.language-pairs`
+  config (`LanguagePairService`) — NOT the per-enrollment truth, that's
+  `user_list.base_lang`. `status` is a billing tier ('free'/'paid'), not
+  user-editable, no billing logic yet.
 - `user_list(user_id, list_id, base_lang, status, started_at, completed_at)`,
   PK(user_id, list_id). `base_lang` = taught-from language, PER ENROLLMENT (NOT
-  on account — a user may learn from different languages per list).
+  on account — a user may learn from different languages per list). `status`
+  is 'active' | 'completed'. **At most one 'active' row per user** — enforced
+  both in `EnrollmentService` AND at the DB level (`one_active_enrollment`
+  partial unique index, `01_schema.sql`). Enrolling a different list while one
+  is active DELETES it (cascades progress/sessions) — destructive, UI warns
+  first. Completion is automatic/server-computed (`EnrollmentService.
+  completeIfMastered`, checked after every `/sessions/{id}/complete`): all
+  words mastered flips `status` to 'completed' WITHOUT touching
+  `list_progress` (only `attempt` rows are ever prunable). Re-enrolling a
+  completed list REACTIVATES the same row (resume/review with mastery intact),
+  not a new row and not a progress wipe — see `doc/app-info/Data/user_list.md`.
 - `list_progress` and `sessions` FK their (user_id, list_id) to `user_list`
   (the enrollment) — neither can exist without enrollment.
 - `attempt` is denormalized (individual FKs) for query speed, append-only.

@@ -1,0 +1,10 @@
+**Purpose:** authenticate or register. One view and simply switch between view states. A s result this view may have 3 main conditions.
+**Components:** email field, password field, submit button, register button, reset password, enter confirmation code from the email. "go to Register" link, got to Reset subview, inline error text.  
+**Data:** `POST /auth/login` → `TokenPair` (still a stub server-side - always succeeds, does not check the password yet). `POST /auth/register` → `TokenPair` (real - creates the account with a hashed password and emails a 4-digit confirmation code asynchronously; access is NOT gated on entering that code, so login/Home works immediately after register). Reset subview has two paths: code (`POST /auth/reset/request`, body `{email}`) or link (`POST /auth/reset/link`, body `{email}` - also triggers a separate fraud-notification email); either way finish with `POST /auth/reset/confirm` (`{email, newPassword}` plus exactly one of `code` or `token`). Reset request/link ALWAYS respond 204 whether or not the email matches an account - the UI must not imply "sent" vs "no such account" differently.
+**States:** `idle · submitting · error(code)` — error text branches on the error `code` (e.g. `EMAIL_TAKEN` on register, `INVALID_OR_EXPIRED_CODE` on reset confirm), never on `message`. Registration triggers a confirmation-code email as a side effect but doesn't block on it. On success → Home.
+##### API
+`POST /auth/login` → `TokenPair` (stub).
+`POST /auth/register` → `TokenPair` (201; 409 `EMAIL_TAKEN` if the email is already registered).
+`POST /auth/reset/request` → 204 (body `{email}`).
+`POST /auth/reset/link` → 204 (body `{email}`; code-less alternative).
+`POST /auth/reset/confirm` → 204 (body `{email, newPassword}` + `code` or `token`; 400 `INVALID_OR_EXPIRED_CODE` on a wrong/expired one).

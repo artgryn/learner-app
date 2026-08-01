@@ -2,6 +2,7 @@ package com.artgr.learner.controllers;
 
 import com.artgr.learner.data.entity.Account;
 import com.artgr.learner.data.entity.UserList;
+import com.artgr.learner.data.mappers.AccountMapper;
 import com.artgr.learner.data.mappers.EnrollmentMapper;
 import com.artgr.learner.data.presentation.Enrollment;
 import com.artgr.learner.data.presentation.HomeResponse;
@@ -22,11 +23,13 @@ public class ProgressController {
     private final ProgressService progressService;
     private final CurrentUserProvider currentUserProvider;
     private final EnrollmentMapper enrollmentMapper;
+    private final AccountMapper accountMapper;
 
-    public ProgressController(ProgressService progressService, CurrentUserProvider currentUserProvider, EnrollmentMapper enrollmentMapper) {
+    public ProgressController(ProgressService progressService, CurrentUserProvider currentUserProvider, EnrollmentMapper enrollmentMapper, AccountMapper accountMapper) {
         this.progressService = progressService;
         this.currentUserProvider = currentUserProvider;
         this.enrollmentMapper = enrollmentMapper;
+        this.accountMapper = accountMapper;
     }
 
     @GetMapping("/home")
@@ -38,7 +41,7 @@ public class ProgressController {
         Long resumeListId = progressService.resumeListId(enrollments);
 
         return ResponseEntity.ok(new HomeResponse(
-                new HomeResponse.User(account.getId(), account.getEmail()),
+                accountMapper.toDto(account),
                 enrollmentDtos,
                 resumeListId == null ? null : new HomeResponse.Resume(resumeListId)
         ));

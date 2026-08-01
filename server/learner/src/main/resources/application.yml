@@ -1,3 +1,7 @@
+server:
+  servlet:
+    context-path: /v1
+
 spring:
   application:
     name: learner
@@ -14,6 +18,17 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
 
 app:
   session:
@@ -22,3 +37,22 @@ app:
     exercises-per-word-per-session: 2
     review-words-per-session: 8
     mastery-threshold: 3
+  # TEMPORARY stand-in for coverage-derived pairs (doc/api/swagger.yaml
+  # GET /language-pairs) - the real long-term constraint is translation
+  # coverage in the data, not this list. Keep in sync with
+  # doc/app-info/Supported languages.md.
+  language-pairs:
+    - base: en
+      target: sv
+  mail:
+    # false (default/local) -> LoggingEmailService (no-op, logs only, no SMTP
+    # needed). Set true only where spring.mail.* points at a real relay.
+    enabled: false
+    from-address: no-reply@learner.app
+  reset:
+    code-length: 4
+    code-ttl: 15m # must stay <= 1h (doc/prompt_2.md)
+    link-ttl: 30m
+    # Dev-only default - override via env var for any real deployment.
+    link-secret: ${RESET_LINK_SECRET:dev-only-insecure-reset-link-secret-change-me}
+    link-base-url: ${RESET_LINK_BASE_URL:https://app.learner.example/reset-password}

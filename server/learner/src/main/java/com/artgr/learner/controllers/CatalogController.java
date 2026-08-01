@@ -3,10 +3,13 @@ package com.artgr.learner.controllers;
 import com.artgr.learner.data.entity.WordList;
 import com.artgr.learner.data.enums.ExerciseType;
 import com.artgr.learner.data.enums.LanguageCode;
+import com.artgr.learner.data.presentation.LanguagePair;
 import com.artgr.learner.data.presentation.LanguageResponse;
 import com.artgr.learner.data.presentation.ListDetail;
 import com.artgr.learner.data.presentation.ListSummary;
+import com.artgr.learner.data.presentation.ListWord;
 import com.artgr.learner.service.CatalogService;
+import com.artgr.learner.service.LanguagePairService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,9 +22,18 @@ import java.util.List;
 public class CatalogController {
 
     private final CatalogService catalogService;
+    private final LanguagePairService languagePairService;
 
-    public CatalogController(CatalogService catalogService) {
+    public CatalogController(CatalogService catalogService, LanguagePairService languagePairService) {
         this.catalogService = catalogService;
+        this.languagePairService = languagePairService;
+    }
+
+    // Secured counterpart to GET /public/init's languagePairs - see
+    // doc/api/swagger.yaml for why the same data is exposed both ways.
+    @GetMapping("/language-pairs")
+    public ResponseEntity<List<LanguagePair>> languagePairs() {
+        return ResponseEntity.ok(languagePairService.all());
     }
 
     @GetMapping("/languages")
@@ -56,6 +68,16 @@ public class CatalogController {
                 catalogService.wordCount(list.getId()),
                 allowedExercises
         ));
+    }
+
+    // Catalog data only - no per-user mastery; cross-reference
+    // GET /enrollments/{listId}/progress (keyed by lexemeId) for that.
+    @GetMapping("/lists/{listId}/items")
+    public ResponseEntity<List<ListWord>> listWords(
+            @PathVariable Long listId,
+            @RequestParam LanguageCode base
+    ) {
+        return ResponseEntity.ok(catalogService.wordsFor(listId, base));
     }
 
     private ListSummary toSummary(WordList list) {

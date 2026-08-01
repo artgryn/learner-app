@@ -1,0 +1,7 @@
+- error popup - used to show generic errors, mainly in a case of server error or if server not available
+- logo and icons
+- background
+- buttons
+- bottom menu - island with home, lists, account views
+- loaders - shared placeholders to indicate that data is loading
+- progress bar - mainly will take full with of the component(view, container, list cell) and small heigh. Will show progress where full component width is a 100%. Use case: learning list progress, session progress etc...

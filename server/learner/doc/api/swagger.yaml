@@ -10,16 +10,22 @@ info:
     the path or body.
 
 servers:
+  # The /v1 prefix is the Spring `server.servlet.context-path: /v1`.
+  # It lives in the server URL, NOT on each path — effective URL = server.url + path
+  # (e.g. http://localhost:8080/v1 + /auth/login = http://localhost:8080/v1/auth/login).
+  # Do not repeat /v1 on individual paths or it will double.
   - url: https://api.example.com/v1
-    description: Production
+    description: Production (context-path /v1)
   - url: http://localhost:8080/v1
-    description: Local
+    description: Local (context-path /v1)
 
 security:
   - bearerAuth: []
 
 tags:
   - name: Auth
+  - name: Account
+  - name: Public
   - name: Catalog
   - name: Enrollment
   - name: Session
@@ -32,6 +38,11 @@ paths:
       tags: [Auth]
       summary: Create account
       security: []
+      description: >
+        Creates the account row (password stored hashed) and sends a 4-digit
+        registration-confirmation code by email, asynchronously. Returns
+        tokens immediately - access is NOT gated on confirming the code (MVP;
+        see doc/CLAUDE.md, auth stays stubbed).
       requestBody:
         required: true
         content:
@@ -43,7 +54,12 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/TokenPair' }
-        '409': { $ref: '#/components/responses/Error' }
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example: { error: { status: 409, code: EMAIL_TAKEN, message: "An account with this email already exists", traceId: req_a3f2c9 } }
         '400': { $ref: '#/components/responses/Error' }
 
   /auth/login:
@@ -93,6 +109,130 @@ paths:
       responses:
         '204': { description: Logged out }
 
+  /auth/reset/request:
+    post:
+      tags: [Auth]
+      summary: Request a password reset code
+      security: []
+      description: >
+        Always responds 204, regardless of whether the email matches an
+        account - account existence must never be leaked. If it matches,
+        generates a 4-digit code, stores it in a cache (TTL <= 1h, keyed by
+        purpose + email), and emails it asynchronously.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResetCodeRequest' }
+      responses:
+        '204': { description: Code sent if the account exists (response does not indicate which) }
+
+  /auth/reset/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirm a password reset with a code or a link token
+      security: []
+      description: >
+        Shared confirm step for BOTH reset flows - supply exactly one of
+        `code` (from /auth/reset/request) or `token` (from /auth/reset/link).
+        Verifies it (code: cache lookup, exists/unexpired/matches; token:
+        signature + expiry, no storage), sets the new password, and
+        invalidates the code if one was used. Wrong/expired/missing
+        code-or-token all respond identically with INVALID_OR_EXPIRED_CODE -
+        do not distinguish "not found" from "expired" in the response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResetConfirmRequest' }
+      responses:
+        '204': { description: Password updated }
+        '400': { $ref: '#/components/responses/Error' }
+
+  /auth/reset/link:
+    post:
+      tags: [Auth]
+      summary: Request a code-less reset link
+      security: []
+      description: >
+        Code-less alternative to /auth/reset/request. Emails a stateless
+        SIGNED token (short-lived, e.g. JWS with expiry - no server-side
+        storage) as a reset link, plus a separate fraud-signal notification
+        email ("if this wasn't you..."). Same non-enumeration behavior as
+        /auth/reset/request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResetLinkRequest' }
+      responses:
+        '204': { description: Link sent if the account exists (response does not indicate which) }
+
+  # ---------------------------- PUBLIC -----------------------------
+  # Unauthenticated, pre-login endpoints. Namespaced under /public so more
+  # public/bootstrap resources can be added here later.
+  /public/init:
+    get:
+      tags: [Public]
+      summary: Public bootstrap data (pre-login)
+      security: []
+      description: >
+        Generic bootstrap payload for screens that run before login (e.g. the
+        init_account language-pair picker). Currently carries only
+        languagePairs, but the response is an object - not a bare array - so
+        more public data can be added here later without breaking clients.
+        For the equivalent call from inside the logged-in app, see the
+        secured GET /language-pairs.
+      responses:
+        '200':
+          description: Public bootstrap data
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicInitResponse' }
+
+  # ---------------------------- ACCOUNT -----------------------------
+  /me:
+    get:
+      tags: [Account]
+      summary: Current account
+      responses:
+        '200':
+          description: Account
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountView' }
+    patch:
+      tags: [Account]
+      summary: Update current account (partial)
+      description: >
+        Updates name / uiLang / learnBaseLang / learnTargetLang. `email` is
+        not editable here (identity); `status` is not user-editable (billing
+        tier). (learnBaseLang, learnTargetLang) must be a pair returned by
+        GET /language-pairs, or the request is rejected with
+        `UNSUPPORTED_PAIR`. init_account (post-registration) calls this same
+        endpoint to set name + the learning pair - there is no separate init
+        endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccountUpdate' }
+      responses:
+        '200':
+          description: Updated account
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountView' }
+        '400': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [Account]
+      summary: Delete current account
+      description: >
+        Deletes the account row. FK ON DELETE CASCADE removes the user's
+        user_list / list_progress / sessions / attempt rows.
+      responses:
+        '204': { description: Account deleted }
+
   # ---------------------------- CATALOG ---------------------------
   /languages:
     get:
@@ -107,6 +247,27 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/Language' }
 
+  /language-pairs:
+    get:
+      tags: [Catalog]
+      summary: Supported (base, target) language pairs (in-app, authenticated)
+      description: >
+        Secured counterpart to GET /public/init's languagePairs, for use
+        inside the logged-in app (catalog pair filter, and the validation
+        source for PATCH /me's learnBaseLang/learnTargetLang check).
+        Currently sourced from application.yml as a TEMPORARY stand-in for
+        coverage-derived pairs - the real long-term constraint is translation
+        coverage in the data. Do not assume this list is exhaustive of what
+        the data could support.
+      responses:
+        '200':
+          description: Supported language pairs
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LanguagePair' }
+
   /lists:
     get:
       tags: [Catalog]
@@ -118,12 +279,12 @@ paths:
         - name: target
           in: query
           required: true
-          schema: { type: string, minLength: 2, maxLength: 2 }
+          schema: { $ref: '#/components/schemas/LanguageCode' }
           example: sv
         - name: base
           in: query
           required: true
-          schema: { type: string, minLength: 2, maxLength: 2 }
+          schema: { $ref: '#/components/schemas/LanguageCode' }
           example: en
       responses:
         '200':
@@ -148,13 +309,48 @@ paths:
               schema: { $ref: '#/components/schemas/ListDetail' }
         '404': { $ref: '#/components/responses/Error' }
 
+  /lists/{listId}/items:
+    get:
+      tags: [Catalog]
+      summary: Words in a list
+      description: >
+        Citation-form word + translation per lexeme in the list, ordered by curated
+        position. Catalog data only - no per-user mastery state (cross-reference
+        GET /enrollments/{listId}/progress, keyed by lexemeId, for that).
+      parameters:
+        - $ref: '#/components/parameters/ListId'
+        - name: base
+          in: query
+          required: true
+          schema: { $ref: '#/components/schemas/LanguageCode' }
+          example: en
+      responses:
+        '200':
+          description: Words
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ListWord' }
+        '404': { $ref: '#/components/responses/Error' }
+
   /lists/{listId}/enroll:
     post:
       tags: [Enrollment]
-      summary: Enroll current user in a list (idempotent)
+      summary: Enroll current user in a list (idempotent) / restart a completed one
       description: >
         Creates one user_list row (a reference, not a copy of the words).
-        Idempotent - enrolling twice returns the existing enrollment.
+        Idempotent for the SAME active list - enrolling twice returns the
+        existing enrollment (200). If that list is already 'completed', this
+        instead REACTIVATES the same row (status -> active, completed_at ->
+        null) with its list_progress left untouched - "restart" means
+        resume/review with existing mastery intact, not a wipe. Either way,
+        a user has at most ONE active enrollment (MVP): if a DIFFERENT list
+        is currently active, enrolling/restarting here DELETES that active
+        enrollment first (cascading to its list_progress/sessions) - this is
+        destructive to THAT list's progress (completed lists are never
+        touched by this rule, only whatever is currently active). The client
+        is expected to warn the user before calling this in that situation.
         User id comes from the token, not the body.
       parameters:
         - $ref: '#/components/parameters/ListId'
@@ -167,9 +363,8 @@ paths:
               required: [baseLang]
               properties:
                 baseLang:
-                  type: string
-                  minLength: 2
-                  maxLength: 2
+                  allOf:
+                    - $ref: '#/components/schemas/LanguageCode'
                   description: Language taught FROM for this enrollment.
                   example: en
       responses:
@@ -264,7 +459,12 @@ paths:
       description: >
         Carries the results array. Server writes, in one transaction:
         per result an attempt row + a list_progress upsert, then one
-        sessions row. Idempotent on retry via client-supplied exerciseId.
+        sessions row. Idempotent on retry via client-supplied itemId.
+        Afterward, auto-checks completion: if every word in the list has now
+        reached the mastery threshold, the enrollment flips to
+        status=completed (list_progress is left as-is). The response here
+        does not surface that flag - the client discovers it via the next
+        GET /enrollments/{listId} or GET /me/home.
       parameters:
         - $ref: '#/components/parameters/SessionId'
       requestBody:
@@ -284,6 +484,11 @@ paths:
     post:
       tags: [Session]
       summary: Optional incremental result sync during a long session
+      description: >
+        NOT IMPLEMENTED YET. Attempts reference a `sessions` row that doesn't
+        exist until /complete, so there is nowhere to attach an attempt's
+        session id for a mid-session sync. Always returns 501 with no body,
+        regardless of session state.
       parameters:
         - $ref: '#/components/parameters/SessionId'
       requestBody:
@@ -292,14 +497,8 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/ResultsBatch' }
       responses:
-        '200':
-          description: Progress updated
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/WordProgress' }
-        '404': { $ref: '#/components/responses/Error' }
+        '501':
+          description: Not implemented
 
   # ---------------------------- PROGRESS --------------------------
   /me/home:
@@ -376,21 +575,115 @@ components:
         accessToken: { type: string }
         refreshToken: { type: string }
         expiresIn: { type: integer, description: Access token TTL in seconds }
+    ResetCodeRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+    ResetConfirmRequest:
+      type: object
+      required: [email, newPassword]
+      description: >
+        Supply exactly one of `code` (from /auth/reset/request) or `token`
+        (from /auth/reset/link) - not both, not neither.
+      properties:
+        email: { type: string, format: email }
+        code:
+          type: string
+          minLength: 4
+          maxLength: 4
+          nullable: true
+          example: '1234'
+          description: 4-digit numeric code from the reset-code email.
+        token:
+          type: string
+          nullable: true
+          description: Stateless signed token from the reset-link email.
+        newPassword: { type: string, minLength: 8 }
+    ResetLinkRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+
+    # ---- account ----
+    AccountStatus:
+      type: string
+      description: Billing tier. Not user-editable; no billing logic yet.
+      enum: [free, paid]
+    AccountView:
+      type: object
+      required: [id, email, status]
+      description: GET /me response. Never carries password/security fields.
+      properties:
+        id: { type: integer, format: int64 }
+        email: { type: string, format: email }
+        name: { type: string, nullable: true }
+        uiLang:
+          allOf: [ $ref: '#/components/schemas/LanguageCode' ]
+          nullable: true
+          description: App interface language. Defaults to 'en'.
+        learnBaseLang:
+          allOf: [ $ref: '#/components/schemas/LanguageCode' ]
+          nullable: true
+          description: >
+            Default/filter pair - language taught FROM. Pre-fills
+            user_list.baseLang at enroll time; NOT the per-enrollment source
+            of truth (that's Enrollment.baseLang).
+        learnTargetLang:
+          allOf: [ $ref: '#/components/schemas/LanguageCode' ]
+          nullable: true
+          description: Default/filter pair - language being learned.
+        status: { $ref: '#/components/schemas/AccountStatus' }
+    AccountUpdate:
+      type: object
+      description: >
+        PATCH /me body - partial update, all fields optional; omit a field to
+        leave it unchanged. email and status are not settable here.
+      properties:
+        name: { type: string }
+        uiLang: { $ref: '#/components/schemas/LanguageCode' }
+        learnBaseLang: { $ref: '#/components/schemas/LanguageCode' }
+        learnTargetLang: { $ref: '#/components/schemas/LanguageCode' }
 
     # ---- catalog ----
+    LanguageCode:
+      type: string
+      description: Closed set of supported language codes (`LanguageCode` enum).
+      enum: [sv, en, ru, uk]
     Language:
       type: object
       required: [code, name]
       properties:
-        code: { type: string, minLength: 2, maxLength: 2, example: sv }
+        code: { $ref: '#/components/schemas/LanguageCode' }
         name: { type: string, example: Swedish }
+    LanguagePair:
+      type: object
+      required: [base, target]
+      description: >
+        A supported (base, target) combination - sourced from application.yml
+        as a TEMPORARY stand-in for coverage-derived pairs. See
+        GET /language-pairs and GET /public/init.
+      properties:
+        base: { $ref: '#/components/schemas/Language' }
+        target: { $ref: '#/components/schemas/Language' }
+    PublicInitResponse:
+      type: object
+      description: >
+        GET /public/init response - a generic, unauthenticated bootstrap
+        payload. An object, not a bare array, so more public data can be
+        added later without breaking clients.
+      properties:
+        languagePairs:
+          type: array
+          items: { $ref: '#/components/schemas/LanguagePair' }
     ListSummary:
       type: object
       required: [listId, name, targetLang, totalWords]
       properties:
         listId: { type: integer, format: int64 }
         name: { type: string, example: Swedish Basics }
-        targetLang: { type: string, example: sv }
+        targetLang: { $ref: '#/components/schemas/LanguageCode' }
         totalWords: { type: integer, example: 2000 }
     ListDetail:
       allOf:
@@ -402,6 +695,19 @@ components:
               nullable: true
               description: Null = all types permitted.
               items: { $ref: '#/components/schemas/ExerciseType' }
+    ListWord:
+      type: object
+      required: [lexemeId, word, pos]
+      properties:
+        lexemeId: { type: integer, format: int64 }
+        word: { type: string, example: ett hus, description: Citation form, ready to render. }
+        pos: { type: string, example: noun }
+        gender: { type: string, nullable: true, example: ett }
+        translation:
+          type: string
+          nullable: true
+          example: house
+          description: Null if no translation exists for the requested base language.
 
     # ---- enrollment / progress ----
     Enrollment:
@@ -410,9 +716,17 @@ components:
       properties:
         listId: { type: integer, format: int64 }
         name: { type: string }
-        baseLang: { type: string, example: en }
-        targetLang: { type: string, example: sv }
-        status: { type: string, enum: [active, completed] }
+        baseLang: { $ref: '#/components/schemas/LanguageCode' }
+        targetLang: { $ref: '#/components/schemas/LanguageCode' }
+        status:
+          type: string
+          enum: [active, completed]
+          description: >
+            'completed' is set automatically (server-computed, on
+            POST /sessions/{sessionId}/complete) when wordsMastered reaches
+            totalWords - not a client action. Re-enrolling via
+            POST /lists/{listId}/enroll on a completed list reactivates it
+            (back to 'active') without resetting wordsMastered/totalWords.
         wordsMastered: { type: integer, example: 1 }
         totalWords: { type: integer, example: 3 }
         sessions:
@@ -616,11 +930,9 @@ components:
     HomeResponse:
       type: object
       properties:
-        user:
-          type: object
-          properties:
-            id: { type: integer, format: int64 }
-            email: { type: string, format: email }
+        # Expanded from {id, email} to the full AccountView now that GET /me
+        # exists - additive; clients reading only id/email are unaffected.
+        user: { $ref: '#/components/schemas/AccountView' }
         enrollments:
           type: array
           items: { $ref: '#/components/schemas/Enrollment' }

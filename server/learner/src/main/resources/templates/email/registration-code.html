@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Confirm your registration</title>
+</head>
+<body>
+    <p>Hi <span th:text="${name} ?: 'there'">there</span>,</p>
+    <p>Use this code to confirm your registration:</p>
+    <p style="font-size: 24px; font-weight: bold; letter-spacing: 4px;" th:text="${code}">1234</p>
+    <p>If you didn't create an account, you can ignore this email.</p>
+</body>
+</html>

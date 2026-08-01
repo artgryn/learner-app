@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Was this you?</title>
+</head>
+<body>
+    <p>Hi <span th:text="${name} ?: 'there'">there</span>,</p>
+    <p>Someone just requested a password reset link for your account.</p>
+    <p><strong>If this was you</strong>, no action is needed - use the link in the other email we sent.</p>
+    <p><strong>If this wasn't you</strong>, please contact support right away.</p>
+</body>
+</html>

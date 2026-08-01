@@ -18,7 +18,8 @@ TRUNCATE TABLE attempt, sessions, list_progress, user_list, account
 
 -- ============================= USER SAMPLE =============================
 -- account no longer carries base_lang
-INSERT INTO account (id, email) VALUES (1, 'demo@example.com');
+INSERT INTO account (id, email, name, ui_lang, learn_base_lang, learn_target_lang, status)
+  VALUES (1, 'demo@example.com', 'Demo', 'en', 'en', 'sv', 'free');
 
 -- enrollment carries the taught-from language (learn sv list FROM en)
 -- no list_progress / sessions / attempt rows: a fresh enrollment starts

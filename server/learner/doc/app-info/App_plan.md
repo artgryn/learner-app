@@ -65,3 +65,4 @@ Learning based on the showing cards with word with translation and sub-card with
 4. Implement API
 5. Ingest initial data for testing
 	- **Validate list coherence at load time**: every word supports ≥1 of its list's `allowed_exercises`
+

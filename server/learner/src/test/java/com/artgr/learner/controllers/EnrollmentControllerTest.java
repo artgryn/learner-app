@@ -57,9 +57,23 @@ class EnrollmentControllerTest {
                 .andExpect(jsonPath("$.listId").value(2))
                 .andExpect(jsonPath("$.totalWords").value(1));
 
+        // One active enrollment per user (MVP) - enrolling list 2 evicts the
+        // seeded list 1 enrollment, it does not add alongside it.
         mockMvc.perform(get("/enrollments"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].listId").value(2));
+    }
+
+    @Test
+    void enrollingAnotherListDeletesThePreviousActiveEnrollment() throws Exception {
+        mockMvc.perform(post("/lists/2/enroll")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"baseLang\":\"en\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/enrollments/1"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

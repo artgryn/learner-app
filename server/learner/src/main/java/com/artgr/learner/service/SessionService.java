@@ -211,6 +211,11 @@ public class SessionService {
             touchedLexemeIds.add(result.lexemeId());
         }
 
+        // Auto-completion check - every word mastered flips the enrollment
+        // to 'completed' (doc/app-info/Data/user_list.md). Runs after
+        // progress is written so it sees this session's results.
+        enrollmentService.completeIfMastered(pending.userId(), pending.listId());
+
         return new CompleteResponse(sessionId, progressFor(pending.userId(), pending.listId(), touchedLexemeIds));
     }
 
