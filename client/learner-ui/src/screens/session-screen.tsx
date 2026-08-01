@@ -84,7 +84,10 @@ export function SessionScreen({ listId }: SessionScreenProps) {
   }
 
   function goHome() {
-    router.dismissTo('/');
+    // dismissTo('/') doesn't reliably unwind the modal *and* switch tabs from here (session
+    // sits two levels inside the Lists tab's own stack). push('/') is the same mechanism
+    // Home's "Browse lists" button already uses to cross tabs, just in the other direction.
+    router.push('/');
   }
 
   const showExit = phase.status === 'loading' || phase.status === 'active' || phase.status === 'error';
