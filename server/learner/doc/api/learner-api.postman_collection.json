@@ -80,6 +80,21 @@
           }
         },
         {
+          "name": "Get List Words (catalog only - no per-user mastery, cross-reference enrollment progress)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lists/1/items?base=en",
+              "host": ["{{baseUrl}}"],
+              "path": ["lists", "1", "items"],
+              "query": [
+                { "key": "base", "value": "en" }
+              ]
+            }
+          }
+        },
+        {
           "name": "Get Language Pairs (secured counterpart to Public Init)",
           "request": {
             "method": "GET",

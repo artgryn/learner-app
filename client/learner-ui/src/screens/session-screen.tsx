@@ -65,7 +65,19 @@ export function SessionScreen({ listId }: SessionScreenProps) {
     setPhase({ status: 'summary', session, results, submitStatus: 'submitting' });
     completeSession(session.sessionId, { results })
       .then(() => setPhase({ status: 'summary', session, results, submitStatus: 'done' }))
-      .catch(() => setPhase({ status: 'summary', session, results, submitStatus: 'failed' }));
+      .catch((error) => {
+        // /complete is NOT idempotent — sessionId is consumed on first call, so a retry that
+        // hits 404 almost always means an earlier attempt actually reached the server and
+        // consumed it, even though this client never saw that response (e.g. a network drop
+        // right after). Treat that case as success rather than failing the retry again.
+        const alreadyConsumed = error instanceof ApiError && error.status === 404;
+        setPhase({
+          status: 'summary',
+          session,
+          results,
+          submitStatus: alreadyConsumed ? 'done' : 'failed',
+        });
+      });
   }
 
   function advance() {
@@ -84,9 +96,13 @@ export function SessionScreen({ listId }: SessionScreenProps) {
   }
 
   function goHome() {
-    // dismissTo('/') doesn't reliably unwind the modal *and* switch tabs from here (session
-    // sits two levels inside the Lists tab's own stack). push('/') is the same mechanism
-    // Home's "Browse lists" button already uses to cross tabs, just in the other direction.
+    // push('/') alone only swaps the content *under* this page sheet — the sheet itself stays
+    // presented since push is additive, not a dismiss. back() closes the sheet (same as the
+    // exit/back gestures elsewhere); push('/') then crosses from the Lists tab to Home, the
+    // same mechanism Home's "Browse lists" button already uses in the other direction.
+    if (router.canGoBack()) {
+      router.back();
+    }
     router.push('/');
   }
 
@@ -164,7 +180,10 @@ export function SessionScreen({ listId }: SessionScreenProps) {
         message="Progress on words you've already mastered is saved, but this session will restart from the beginning next time."
         confirmLabel="End session"
         cancelLabel="Keep going"
-        onConfirm={goHome}
+        onConfirm={() => {
+          setConfirmingExit(false);
+          goHome();
+        }}
         onCancel={() => setConfirmingExit(false)}
       />
     </Screen>

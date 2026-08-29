@@ -43,7 +43,17 @@ export function StatsScreen() {
             sf="chevron.left"
             feather="chevron-left"
             accessibilityLabel="Back"
-            onPress={() => router.back()}
+            onPress={() => {
+              // canGoBack() guard: this screen can be reached with no back history in its stack
+              // (e.g. a deep link straight to /settings/stats), in which case back() throws
+              // "GO_BACK was not handled by any navigator". Fall back to Account settings, the
+              // only screen that links here.
+              if (router.canGoBack()) {
+                router.back();
+                return;
+              }
+              router.push('/settings');
+            }}
           />
         }
       />

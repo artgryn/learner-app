@@ -30,6 +30,38 @@ The translate exercise renders this form as the prompt but tests a lexeme-level 
 for defective words (plural-only like *pengar*): add an optional `is_citation`
 boolean later.
 
+#### Citation is STORED, not composed (server is language-agnostic)
+
+The pos->form_type table above is INGESTION guidance for *which* form seeds the
+citation. The displayed headword itself is composed by ingestion and STORED in
+[[lexeme]].`citation` (e.g. `ett hus`, `att gå`, `to go`). The server READS
+`lexeme.citation` and composes nothing — all language-specific assembly lives in
+ingestion/data. The table below shows how ingestion builds each citation:
+
+| language | pos  | composed citation | example |
+| -------- | ---- | ----------------- | ------- |
+| Swedish  | noun | `gender` + lemma  | `ett hus` |
+| Swedish  | verb | `att` + lemma     | `att gå` |
+| English  | verb | `to` + lemma      | `to go`, `to work` |
+| English  | noun | bare lemma        | `sun`, `work` (dictionary style) |
+
+English follows dictionary convention: verbs marked with `to`, nouns bare (no
+article). This applies wherever English appears as a translation or on the intro
+card, so the English side reads consistently with the Swedish citation (e.g. the
+translation of `att gå` displays as `to go`, not `go`). Do NOT store the article/
+marker in the DB — compose it from `pos` + `lang`, the same way Swedish does.
+
+#### English is a FULL target language (not meaning-only)
+
+English lexemes carry `infl_class`, `tema` (irregulars only), and a complete
+`word_form` paradigm — the same as Swedish — because English can be a LEARNING
+target (e.g. learned from Ukrainian or Russian), not just a translation target.
+Nouns store `sg`/`pl`; verbs store `infinitive`/`present_3sg`/`preteritum`/`supine`/
+`present_participle`; adjectives store `base`/`comparative`/`superlative`. Every
+lexeme in every language is first-class: full forms, its own `infl_class`, and a
+stored `citation`.
+
+
 ### form_type catalog — Swedish (target, full)
 
 | form_type            | full name                | pos     | citation |

@@ -101,7 +101,10 @@ const styles = StyleSheet.create({
   formValue: {
     fontFamily: Fonts.word,
   },
+  // marginBottom kept in sync with exercise-view's Next/auto-advance bar and list-details-screen's
+  // CTA — every screen's bottom-pinned primary action sits the same distance above the safe area.
   nextButton: {
     marginTop: 'auto',
+    marginBottom: Space[5],
   },
 });

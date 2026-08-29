@@ -43,14 +43,16 @@ public class IntroCardBuilder {
     }
 
     // note carries translation nuance (doc/CLAUDE.md - e.g. "to go, to
-    // walk"), a richer signal than the bare partner lemma; fall back to the
-    // partner's lemma when the word has no note.
+    // walk"), a richer signal than the partner's citation; fall back to the
+    // partner's stored citation (not the bare lemma) when the word has no
+    // note, so the base-language side reads consistently with the target-
+    // language citation (doc/app-info/Data/word_form.md - "to go", not "go").
     private String resolveTranslation(Lexeme lexeme, List<Translation> translations, LanguageCode baseLang) {
         if (lexeme.getNote() != null && !lexeme.getNote().isBlank()) {
             return lexeme.getNote();
         }
         return findTranslationPartner(lexeme.getId(), translations, baseLang.name())
-                .map(Lexeme::getLemma)
+                .map(partner -> partner.getCitation() != null ? partner.getCitation() : partner.getLemma())
                 .orElse(null);
     }
 

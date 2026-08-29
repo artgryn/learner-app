@@ -54,7 +54,9 @@ export function ListDetailsScreen({ listId }: ListDetailsScreenProps) {
   const thisEnrollment = ready?.enrollments.find((e) => e.listId === listId);
   const activeEnrollment = ready?.enrollments.find((e) => e.status === 'active');
   const status: ListStatus = thisEnrollment?.status ?? 'not-enrolled';
-  const cta = status === 'completed' ? 'Restart' : status === 'active' ? 'Start learning' : 'Enroll';
+  // "Start learning" reads as the CTA for something not yet begun — reserve it for lists with no
+  // progress. An already-active (in-progress) list gets "Continue" instead.
+  const cta = status === 'completed' ? 'Restart' : status === 'active' ? 'Continue' : 'Start learning';
 
   // Per-word mastery only exists once enrolled — fetched separately from the catalog word list.
   useEffect(() => {
@@ -72,7 +74,13 @@ export function ListDetailsScreen({ listId }: ListDetailsScreenProps) {
     setEnrolling(true);
     try {
       await enrollInList(listId, BASE_LANG);
-      router.back();
+      // push('/') alone only swaps the content *under* this page sheet — the sheet itself
+      // stays presented since push is additive, not a dismiss. back() closes the sheet; push('/')
+      // then crosses from the Lists tab to Home (same mechanism "Browse lists" uses in reverse).
+      if (router.canGoBack()) {
+        router.back();
+      }
+      router.push('/');
     } catch {
       setEnrolling(false);
     }
@@ -99,7 +107,17 @@ export function ListDetailsScreen({ listId }: ListDetailsScreenProps) {
             sf="chevron.left"
             feather="chevron-left"
             accessibilityLabel="Back"
-            onPress={() => router.back()}
+            onPress={() => {
+              // canGoBack() guard per session-screen.tsx/enroll() above — this screen can be
+              // reached with no back history in its stack (e.g. a deep link straight to a list),
+              // in which case back() throws "GO_BACK was not handled by any navigator". Fall back
+              // to the catalog, the natural parent of this screen.
+              if (router.canGoBack()) {
+                router.back();
+                return;
+              }
+              router.push('/lists');
+            }}
           />
         }
       />
@@ -187,7 +205,11 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingTop: Space[5],
-    paddingBottom: Space[5] + 50,
+    // Kept in sync with exercise-view's/intro-card-view's Next button: same distance above the
+    // safe area for every screen's bottom-pinned primary action. (The old extra +50 compensated
+    // for the web tab bar overlapping this sheet — no longer needed now that app-tabs.web.tsx
+    // hides the tab bar on /lists/* routes.)
+    paddingBottom: Space[5],
   },
   ctaButton: {
     width: '100%',

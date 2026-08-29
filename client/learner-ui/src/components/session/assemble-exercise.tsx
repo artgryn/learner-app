@@ -97,6 +97,16 @@ export function AssembleExercise({ letters, answerLength, correctAnswer, onSubmi
           Check
         </Button>
       )}
+      {graded === false && (
+        <View style={[styles.correctAnswerCard, { borderColor: theme.error, backgroundColor: theme.errorTint }]}>
+          <ThemedText type="caption1" color="error" style={styles.correctAnswerLabel}>
+            CORRECT ANSWER
+          </ThemedText>
+          <ThemedText type="word" color="error" style={styles.correctAnswerWord}>
+            {correctAnswer}
+          </ThemedText>
+        </View>
+      )}
     </View>
   );
 }
@@ -132,5 +142,19 @@ const styles = StyleSheet.create({
   },
   letter: {
     fontSize: 20,
+  },
+  correctAnswerCard: {
+    borderWidth: 1.5,
+    borderRadius: Radius.md,
+    paddingVertical: Space[3],
+    paddingHorizontal: Space[4],
+    alignItems: 'center',
+    gap: Space[1],
+  },
+  correctAnswerLabel: {
+    letterSpacing: 0.5,
+  },
+  correctAnswerWord: {
+    fontSize: 22,
   },
 });

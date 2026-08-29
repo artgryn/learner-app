@@ -1,7 +1,7 @@
 1. En/Ett word for Swedish [[MVP]]
-2. Assemble word from the list of letters [[MVP]]
+2. Assemble word from the list of letters — always the word's citation/base form (e.g. "gå", never "gick"), since the prompt (lexeme-level translation) names the citation form [[MVP]]
 3. Guess base form of the word by "word-form" [[MVP]]
-4. Guess "word-form" of the base word
+4. Guess "word-form" of the base word — prompt names the target form (e.g. "flicka (definite singular)"), since the options are sibling forms of the same word and would otherwise all look correct
 5. Select correct option in the sentence — NOTE: needs an **example-sentences table** (not yet in [[Data structure]]); the blank points at a specific [[word_form]], distractors = sibling forms. NOT MVP — defer until the table exists.
 6. Select correct translation(both directions) [[MVP]]
 7. Select correct "word-combo" - en/ett? [[MVP]]

@@ -60,19 +60,32 @@ public class ExerciseGenerator {
     // "enough same-pos distractor words exist" rule.
     public Set<ExerciseType> eligibleTypes(Lexeme lexeme, List<WordForm> forms, List<Translation> translations, LanguageCode baseLang) {
         Set<ExerciseType> types = EnumSet.noneOf(ExerciseType.class);
-        boolean hasTranslation = findTranslationPartner(lexeme.getId(), translations, baseLang.name()).isPresent();
+        Optional<Lexeme> translationPartner = findTranslationPartner(lexeme.getId(), translations, baseLang.name());
 
         if ("noun".equals(lexeme.getPos()) && lexeme.getGender() != null) {
             types.add(ExerciseType.en_ett);
         }
-        if (hasTranslation) {
+        // translate's distractors are the PARTNER's (base-language) same-pos
+        // pool (buildDistractorCitations(partner,...)) - guard on the
+        // partner having same-pos siblings, same "no any-pos fallback" rule
+        // as LexemeRepository.findDistractorCandidates: a word without
+        // enough same-pos siblings isn't eligible for a choice exercise that
+        // needs them, rather than degrading to a 1-option "choice".
+        if (translationPartner.filter(this::hasSamePosDistractors).isPresent()) {
             types.add(ExerciseType.translate);
         }
-        if (!forms.isEmpty() && hasTranslation) {
+        if (!forms.isEmpty() && translationPartner.isPresent()) {
             types.add(ExerciseType.assemble);
         }
-        if (!citationFormResolver.nonCitationForms(lexeme, forms).isEmpty()) {
+        // base_form's distractors are the lexeme's OWN same-pos pool
+        // (buildDistractorCitations(lexeme,...)) - same guard reasoning.
+        if (!citationFormResolver.nonCitationForms(lexeme, forms).isEmpty() && hasSamePosDistractors(lexeme)) {
             types.add(ExerciseType.base_form);
+        }
+        // produce_form's distractors are sibling forms of THIS word, not
+        // other lexemes (see buildProduceForm) - so its own guard is "enough
+        // distinct forms to offer a real distractor", not same-pos siblings.
+        if (!citationFormResolver.nonCitationForms(lexeme, forms).isEmpty() && distinctFormStrings(forms).size() >= 2) {
             types.add(ExerciseType.produce_form);
         }
         if (distinctFormStrings(forms).size() >= 2 && hasSamePosDistractors(lexeme)) {
@@ -86,7 +99,7 @@ public class ExerciseGenerator {
     // "variety" here means within this session's queue for the word.
     public List<GeneratedExercise> buildExerciseQueue(
             Lexeme lexeme, List<WordForm> forms, List<Translation> translations,
-            Set<ExerciseType> allowedTypes, LanguageCode targetLang, LanguageCode baseLang, int maxCount
+            Set<ExerciseType> allowedTypes, LanguageCode targetLang, LanguageCode baseLang, int maxCount, boolean isNew
     ) {
         Set<ExerciseType> eligible = eligibleTypes(lexeme, forms, translations, baseLang);
         if (allowedTypes != null) {
@@ -95,7 +108,27 @@ public class ExerciseGenerator {
         if (eligible.isEmpty()) {
             return List.of();
         }
-        List<ExerciseType> pool = new ArrayList<>(eligible);
+
+        // A newly-introduced word's intro card displays its FULL paradigm;
+        // produce_form's distractors are always sibling forms of that same
+        // paradigm (see buildProduceForm). Reordering isn't enough - ANY
+        // produce_form exercise this session, anywhere in the queue, has its
+        // whole answer key sitting a few items above it in the same
+        // response. Exclude it entirely for this session; it's fair game
+        // from the word's next session onward, once the card is no longer
+        // part of what's on screen. `translate` is a guaranteed fallback for
+        // every word (data invariant - every lexeme has a translation whose
+        // partner has a same-pos sibling, see 02_seed.sql), so this should
+        // never empty the pool; the size()>1 check is a defensive fallback
+        // only, not the primary mechanism - it's better to give a word its
+        // one remaining exercise type than none at all.
+        Set<ExerciseType> queueable = eligible;
+        if (isNew && eligible.size() > 1 && eligible.contains(ExerciseType.produce_form)) {
+            queueable = EnumSet.copyOf(eligible);
+            queueable.remove(ExerciseType.produce_form);
+        }
+
+        List<ExerciseType> pool = new ArrayList<>(queueable);
         Collections.shuffle(pool, random);
 
         List<GeneratedExercise> queue = new ArrayList<>();
@@ -141,7 +174,19 @@ public class ExerciseGenerator {
     }
 
     private GeneratedExercise buildAssemble(Lexeme lexeme, List<WordForm> forms, List<Translation> translations, LanguageCode baseLang) {
-        WordForm target = forms.get(random.nextInt(forms.size()));
+        // The prompt is always the LEXEME-level translation (e.g. "go"), which
+        // names the CITATION form, not any particular inflection - a
+        // non-citation target (e.g. "gick") would show a mismatched clue
+        // (this used to be pronoun-only, since case forms translate to
+        // genuinely different English words like I/my/me, but the same
+        // mismatch applies to every pos, just less jarringly). Assemble
+        // always targets the citation/base form; other exercise types
+        // (produce_form, multi_select) still provide form variety.
+        List<WordForm> pool = forms.stream().filter(f -> citationFormResolver.isCitationForm(f, lexeme)).toList();
+        if (pool.isEmpty()) {
+            pool = forms;
+        }
+        WordForm target = pool.get(random.nextInt(pool.size()));
         Lexeme partner = findTranslationPartner(lexeme.getId(), translations, baseLang.name()).orElseThrow();
         Prompt prompt = new Prompt(partner.getLemma(), baseLang);
 
@@ -182,8 +227,13 @@ public class ExerciseGenerator {
                 .collect(Collectors.toCollection(ArrayList::new));
         options.add(target.getForm());
         Collections.shuffle(options, random);
+        // The bare citation form alone ("flicka") doesn't say which sibling form is wanted -
+        // every option is a grammatically valid inflection of it, so without naming the target
+        // (e.g. "definite singular") more than one option reads as defensibly correct.
+        String promptText = citationFormResolver.citationFormString(lexeme, forms)
+                + " (" + citationFormResolver.formTypeLabel(target.getId().getFormType()) + ")";
         return new GeneratedExercise(ExerciseType.produce_form, lexeme.getId(), target.getId().getFormType(),
-                new Prompt(citationFormResolver.citationFormString(lexeme, forms), targetLang),
+                new Prompt(promptText, targetLang),
                 new OptionsPayload(options, target.getForm()));
     }
 

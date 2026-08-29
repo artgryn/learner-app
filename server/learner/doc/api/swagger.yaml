@@ -39,7 +39,8 @@ paths:
       summary: Create account
       security: []
       description: >
-        Creates the account row (password stored hashed) and sends a 4-digit
+        Creates the account row (password is accepted but not stored or
+        verified - auth stays stubbed) and sends a 4-digit
         registration-confirmation code by email, asynchronously. Returns
         tokens immediately - access is NOT gated on confirming the code (MVP;
         see doc/CLAUDE.md, auth stays stubbed).
@@ -136,8 +137,9 @@ paths:
         Shared confirm step for BOTH reset flows - supply exactly one of
         `code` (from /auth/reset/request) or `token` (from /auth/reset/link).
         Verifies it (code: cache lookup, exists/unexpired/matches; token:
-        signature + expiry, no storage), sets the new password, and
-        invalidates the code if one was used. Wrong/expired/missing
+        signature + expiry, no storage) and invalidates the code if one was
+        used. The new password is accepted but not stored or verified - auth
+        stays stubbed. Wrong/expired/missing
         code-or-token all respond identically with INVALID_OR_EXPIRED_CODE -
         do not distinguish "not found" from "expired" in the response.
       requestBody:
@@ -369,12 +371,17 @@ paths:
                   example: en
       responses:
         '200':
-          description: Existing enrollment returned (idempotent)
+          description: >
+            Row already existed - covers two distinct cases, both a no-op on
+            list_progress: the list was already 'active' (pure idempotent
+            no-op), OR it was 'completed' and got reactivated (status flips to
+            'active', progress untouched). Inspect the returned `status`/
+            `wordsMastered` to tell them apart if it matters to the client.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Enrollment' }
         '201':
-          description: Enrollment created
+          description: New user_list row created (first-time enroll in this list)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Enrollment' }
@@ -437,11 +444,16 @@ paths:
       tags: [Session]
       summary: Derive a session on demand
       description: >
-        Computes the next session fresh from due + new words and returns an ordered
-        `items` array mixing introduce cards (new words, just-in-time) and fully
-        built exercises WITH their correct answers (client-side grading). The order
-        encodes spacing/interleaving; the client renders top to bottom.
-        A session is created, not fetched - there is no GET.
+        Computes the next session fresh from in-progress words (not-yet-mastered
+        ones prioritized, already-mastered ones only filling leftover budget)
+        plus never-started words, and returns an ordered `items` array mixing
+        introduce cards (new words, just-in-time) and fully built exercises
+        WITH their correct answers (client-side grading). Deliberately NOT
+        time-gated - an in-progress word is eligible again immediately, call
+        this as many times in a row as you want, same day; nothing here waits
+        on a due date or cooldown. The order encodes spacing/interleaving; the
+        client renders top to bottom. A session is created, not fetched -
+        there is no GET.
       parameters:
         - $ref: '#/components/parameters/ListId'
       responses:
@@ -459,7 +471,9 @@ paths:
       description: >
         Carries the results array. Server writes, in one transaction:
         per result an attempt row + a list_progress upsert, then one
-        sessions row. Idempotent on retry via client-supplied itemId.
+        sessions row. NOT idempotent - `sessionId` is consumed on first call;
+        retrying the same `sessionId` gets 404, it does not replay the same
+        result. Clients must not call this twice for one derived session.
         Afterward, auto-checks completion: if every word in the list has now
         reached the mastery threshold, the enrollment flips to
         status=completed (list_progress is left as-is). The response here
@@ -729,6 +743,29 @@ components:
             (back to 'active') without resetting wordsMastered/totalWords.
         wordsMastered: { type: integer, example: 1 }
         totalWords: { type: integer, example: 3 }
+        exercisesCompleted:
+          type: integer
+          example: 6
+          description: >
+            Exercise-level progress toward "list learned" - sum of each
+            word's practice count, capped per word at the server's mastery
+            threshold (extra reps past mastery don't push this past
+            exercisesNeeded). USE THIS (with exercisesNeeded), not
+            wordsMastered/totalWords, for a progress bar: wordsMastered only
+            increments once a word is FULLY mastered, so it moves in coarse
+            jumps; exercisesCompleted moves with every exercise answered.
+            Also do NOT use sessions.done/estimatedTotal for this - that pair
+            tracks session cadence, not mastery, and can hit 100% long before
+            the list is actually learned.
+        exercisesNeeded:
+          type: integer
+          example: 9
+          description: >
+            totalWords × the server's mastery-threshold config. That
+            threshold is NOT exposed as its own field and must not be
+            hardcoded client-side (MVP default is 3, production may differ) -
+            always compute the fraction as exercisesCompleted/exercisesNeeded,
+            never assume the per-word target.
         sessions:
           type: object
           properties:
@@ -743,7 +780,15 @@ components:
         timesPracticed: { type: integer }
         correct: { type: integer }
         wrong: { type: integer }
-        due: { type: string, format: date-time, nullable: true }
+        due:
+          type: string
+          format: date-time
+          nullable: true
+          description: >
+            Informational only - NOT a lockout. This word is already eligible
+            for practice again right now regardless of this timestamp; the
+            app never blocks practice with a cooldown. A seam for a future
+            real spaced-repetition display hint.
 
     # ---- exercise type enum ----
     ExerciseType:
@@ -866,6 +911,11 @@ components:
           example: [house, car, tree, dog]
         correctAnswer: { type: string, example: house }
     AssemblePayload:
+      description: >
+        `correctAnswer` is always the word's citation/base form (e.g. `gå`,
+        never a non-citation form like `gick`) - the prompt is the
+        LEXEME-level translation, which names the citation form, so a
+        non-citation target would show a mismatched clue.
       type: object
       required: [letters, answerLength, correctAnswer]
       properties:
@@ -873,11 +923,19 @@ components:
           type: array
           description: Pre-shuffled, longer than the answer, may contain duplicates. Positional, not a set.
           items: { type: string }
-          example: [k, a, c, g, i, k, n]
-        answerLength: { type: integer, example: 4 }
-        correctAnswer: { type: string, example: gick }
+          example: [å, x, g]
+        answerLength: { type: integer, example: 2 }
+        correctAnswer: { type: string, example: gå }
     OptionsPayload:
-      description: Single-answer choice payload (base_form, produce_form).
+      description: >
+        Single-answer choice payload (base_form, produce_form). For
+        produce_form, options are sibling forms of the SAME word (e.g.
+        flickan/flickor/flickorna for flicka) - every option is a
+        grammatically valid word, so `prompt.text` names the target
+        inflection in parentheses (e.g. "flicka (definite singular)"; see
+        `formType` for the machine-readable code) rather than showing the
+        bare citation form alone, which would leave more than one option
+        looking correct.
       type: object
       required: [options, correctAnswer]
       properties:

@@ -101,7 +101,10 @@ curl http://localhost:8080/v1/sessions/unknown-session-id/complete \
 
 `/sessions/{sessionId}/answers` (incremental sync) is not implemented yet —
 `SessionController.answers` always returns `501 Not Implemented` with no body,
-regardless of session state. See the `// TODO` in `SessionController`.
+regardless of session state. Out of scope for now: attempts reference a
+`sessions` row that doesn't exist until `/complete`, so there's nowhere to
+attach an attempt's `session_id` for a mid-session sync yet (see the comment
+on `SessionController.answers`).
 
 ```bash
 curl -i -X POST http://localhost:8080/v1/sessions/<sessionId>/answers \

@@ -61,6 +61,19 @@ public class ProgressService {
         return (int) listProgressRepository.countMastered(userId, listId, sessionProperties.getMasteryThreshold());
     }
 
+    // Word-level count (wordsMastered/totalWords) is coarse - a word only
+    // counts once FULLY mastered. These give a finer, exercise-level fraction
+    // for a progress bar toward "list learned" (e.g. 6 of 9 reps done, not
+    // just 0 of 3 words). masteryThreshold is always read from config here,
+    // never hardcoded - the MVP default is 3 but production may differ.
+    public int exercisesCompleted(Long userId, Long listId) {
+        return (int) listProgressRepository.sumCappedTimesPracticed(userId, listId, sessionProperties.getMasteryThreshold());
+    }
+
+    public int exercisesNeeded(Long listId) {
+        return totalWords(listId) * sessionProperties.getMasteryThreshold();
+    }
+
     public int sessionsDone(Long userId, Long listId) {
         return (int) learningSessionRepository.countByUserIdAndListId(userId, listId);
     }

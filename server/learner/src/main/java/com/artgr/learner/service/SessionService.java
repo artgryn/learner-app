@@ -55,8 +55,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class SessionService {
 
-    // MVP due policy: simple fixed intervals, not FSRS - explicitly a seam
-    // for later spaced-repetition scheduling (doc/app-info/Data/learning_plan.md).
+    // `due` is informational only - NOT an availability gate. The app must
+    // never block a user from practicing with a cooldown/due date; nothing
+    // reads these values to exclude a word from a session (see
+    // SessionScheduler.selectCandidates, which selects by mastery status,
+    // not by due date). Kept as a seam for a later real spaced-repetition
+    // algorithm (doc/app-info/Data/learning_plan.md) and as a display hint.
     private static final Duration DUE_INTERVAL_CORRECT = Duration.ofDays(1);
     private static final Duration DUE_INTERVAL_INCORRECT = Duration.ofMinutes(10);
 
@@ -124,7 +128,7 @@ public class SessionService {
 
             List<ExerciseGenerator.GeneratedExercise> queue = exerciseGenerator.buildExerciseQueue(
                     lexeme, forms, translations, allowedTypes, targetLang, baseLang,
-                    sessionProperties.getExercisesPerWordPerSession());
+                    sessionProperties.getExercisesPerWordPerSession(), candidate.isNew());
             if (queue.isEmpty()) {
                 // Word qualifies for nothing under this list's allowed
                 // types - skip rather than fail (doc/CLAUDE.md).

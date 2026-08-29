@@ -1,5 +1,6 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ApiError, getHome } from '@/api';
@@ -28,16 +29,21 @@ export function HomeScreen() {
   const router = useRouter();
   const [state, setState] = useState<LoadState>({ status: 'loading' });
 
-  useEffect(() => {
-    getHome()
-      .then((home) => setState({ status: 'ready', home }))
-      .catch((error) =>
-        setState({
-          status: 'error',
-          message: error instanceof ApiError ? error.message : 'Could not load your home screen.',
-        })
-      );
-  }, []);
+  // Refetch every time Home regains focus (not just on mount) — Home stays mounted as a
+  // background tab while Session is open, so returning from it (Greetings' "Back to home", or
+  // ending the session early) wouldn't otherwise pick up the enrollment's updated progress.
+  useFocusEffect(
+    useCallback(() => {
+      getHome()
+        .then((home) => setState({ status: 'ready', home }))
+        .catch((error) =>
+          setState({
+            status: 'error',
+            message: error instanceof ApiError ? error.message : 'Could not load your home screen.',
+          })
+        );
+    }, [])
+  );
 
   const name = state.status === 'ready' ? state.home.user?.name : null;
   const greeting = `Good ${greetingPeriod(new Date().getHours())}${name ? `, ${name}` : ''}`;
@@ -80,9 +86,16 @@ function ContinueCard({ enrollment }: { enrollment: Enrollment }) {
   const router = useRouter();
   const mastered = enrollment.wordsMastered ?? 0;
   const total = enrollment.totalWords ?? 0;
-  const progress = total > 0 ? mastered / total : 0;
-  const sessionsDone = enrollment.sessions?.done ?? 0;
-  const sessionsEstimate = enrollment.sessions?.estimatedTotal;
+  // Per doc/api/swagger.yaml: exercisesCompleted/exercisesNeeded is what should drive a progress
+  // bar — wordsMastered/totalWords only moves in coarse per-word jumps once each word is fully
+  // mastered. Falls back to the word count when the exercise counts aren't present.
+  const exercisesNeeded = enrollment.exercisesNeeded ?? 0;
+  const progress =
+    exercisesNeeded > 0
+      ? (enrollment.exercisesCompleted ?? 0) / exercisesNeeded
+      : total > 0
+        ? mastered / total
+        : 0;
 
   function startSession() {
     router.push(`/lists/${enrollment.listId}/session`);
@@ -101,7 +114,6 @@ function ContinueCard({ enrollment }: { enrollment: Enrollment }) {
           </ThemedText>
           <ThemedText type="footnote" style={styles.heroMuted}>
             {mastered}/{total} words
-            {sessionsEstimate ? ` · session ${sessionsDone + 1} of ~${sessionsEstimate}` : ''}
           </ThemedText>
         </View>
         <Button variant="secondary" style={styles.heroButton} onPress={startSession}>

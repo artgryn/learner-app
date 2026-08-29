@@ -62,6 +62,36 @@ form. Forms drive exercise VARIETY across a word's spaced encounters, not extra
 counters. `attempt.form_type` logs which form was tested, so per-form scheduling
 (Option B) stays possible later without data loss.
 
+## Auth-adjacent infrastructure (built, even though core auth is still stubbed)
+
+Everything below is implemented, despite login/refresh/token verification
+themselves staying stubbed (see "Current implementation status"). Don't treat
+account/email/reset as unbuilt — only the JWT/password-verification core is.
+
+- **Account CRUD** (`AccountController` → `AccountService`, `/me`): `GET /me`,
+  `PATCH /me` (name, ui_lang, learning pair), `DELETE /me`. `POST
+  /auth/register` sets email only; name + learning pair are set by a follow-up
+  `PATCH /me` (`init_account`), not at registration.
+- **Language pairs from config, not DB**: `GET /language-pairs`
+  (`CatalogController`) returns supported (base, target) pairs from
+  `LanguagePairsProperties` (`app.language-pairs` in `application.yml`). A
+  TEMPORARY stand-in for coverage-derived pairs (the real constraint is
+  translation coverage in the data) — fine for MVP. Do not add a pairs table.
+- **Password reset / email confirmation** (`AuthController`): `POST
+  /auth/reset/request` (4-digit code via `VerificationCodeStore`, no DB
+  table), `POST /auth/reset/confirm` (code or signed token — no password is
+  actually stored, auth stays stubbed), `POST /auth/reset/link` (stateless
+  `ResetLinkTokenService`-signed link + a fraud-notification email).
+  Registration uses the same 4-digit-code mechanism.
+- **Email subsystem**: `EmailService` interface with two implementations
+  switched by `app.mail.enabled` — `SmtpEmailService` (real SMTP) when true,
+  `LoggingEmailService` (logs instead of sending) by default/false. Not a
+  controller; called from `AuthController` flows only.
+- **Single-active-list rule**: enforced in `EnrollmentService.enroll` —
+  `deleteOtherActiveEnrollment` removes any other active `user_list` row for
+  the user before creating/reactivating one (cascades list_progress/sessions).
+  Application-level, not a DB constraint.
+
 ## Data model (10 tables)
 
 Language data: `language`, `lexeme`, `word_form`, `translation`, `list`,
@@ -82,28 +112,14 @@ Key relationships and rules:
   exercise_type[] NULL=all)`.
 - `exercise_type` IS a native Postgres enum (small, closed, app-controlled):
   en_ett, assemble, translate, base_form, produce_form, multi_select.
-- `account(id, email, password_hash, name, ui_lang DEFAULT 'en', learn_base_lang,
-  learn_target_lang, status DEFAULT 'free', created_at)`. `password_hash` (BCrypt)
-  is set only by `POST /auth/register` / `/auth/reset/confirm` — auth stays
-  otherwise stubbed (login never checks it); never returned by any DTO.
-  `learn_base_lang`/`learn_target_lang` are the account's DEFAULT learning pair
-  (catalog filter + enroll pre-fill), validated against `app.language-pairs`
-  config (`LanguagePairService`) — NOT the per-enrollment truth, that's
-  `user_list.base_lang`. `status` is a billing tier ('free'/'paid'), not
-  user-editable, no billing logic yet.
+- `account(id, email, name, ui_lang DEFAULT 'en', learn_base_lang,
+  learn_target_lang, status DEFAULT 'free', created_at)`. The learning pair
+  (learn_base_lang + learn_target_lang, two separate FK→language columns) is the
+  user's DEFAULT: it filters the catalog and pre-fills user_list.base_lang at enroll.
+  It is NOT the learning truth — user_list.base_lang is (per-enrollment).
 - `user_list(user_id, list_id, base_lang, status, started_at, completed_at)`,
-  PK(user_id, list_id). `base_lang` = taught-from language, PER ENROLLMENT (NOT
-  on account — a user may learn from different languages per list). `status`
-  is 'active' | 'completed'. **At most one 'active' row per user** — enforced
-  both in `EnrollmentService` AND at the DB level (`one_active_enrollment`
-  partial unique index, `01_schema.sql`). Enrolling a different list while one
-  is active DELETES it (cascades progress/sessions) — destructive, UI warns
-  first. Completion is automatic/server-computed (`EnrollmentService.
-  completeIfMastered`, checked after every `/sessions/{id}/complete`): all
-  words mastered flips `status` to 'completed' WITHOUT touching
-  `list_progress` (only `attempt` rows are ever prunable). Re-enrolling a
-  completed list REACTIVATES the same row (resume/review with mastery intact),
-  not a new row and not a progress wipe — see `doc/app-info/Data/user_list.md`.
+  PK(user_id, list_id). `base_lang` = taught-from language, PER ENROLLMENT (pre-filled
+  from the account default pair). One active list per user (MVP, app-enforced).
 - `list_progress` and `sessions` FK their (user_id, list_id) to `user_list`
   (the enrollment) — neither can exist without enrollment.
 - `attempt` is denormalized (individual FKs) for query speed, append-only.
@@ -123,23 +139,27 @@ No stored flag.
 - An introduce card is assembled from lexeme + word_form + translation (composed
   citation `word` with article/marker, translation in the enrollment base_lang,
   full labelled paradigm). NO new table/column — it is a read/generation concern.
-- A word gets an intro card when it has no `list_progress` row yet ("not started").
-  Its first real exercise creates that row.
+- A word gets an intro card when `SessionScheduler.selectCandidates` picked it as
+  NEW (no `list_progress` row yet). Its first real exercise creates that row.
 - **The ORDER of items encodes the pedagogy** and is a server-side scheduling
-  decision the client must not reorder: intro card just-in-time before a word's
-  first task; that word's tasks then spaced and INTERLEAVED with other words'
-  tasks. Do NOT bunch all of one word's tasks after its intro (that is massed
-  practice; the point is spacing). Reference flow for 3 words:
-  w1-intro -> w1-t1 -> w1-t2 -> w2-intro -> w2-t1 -> w1-t3 -> w2-t2 -> w3-intro ...
-  This is the spec for session-building ("split list into sessions").
+  decision the client must not reorder — `SessionService.interleave` does
+  ROUND-ROBIN: one exercise per active word per round, so the same word's
+  exercises are never adjacent. A new word's intro card is emitted together with
+  (immediately before) its first exercise, in whichever round that word is first
+  visited — not necessarily round 1, since words are picked review-first, then new
+  (`SessionScheduler.selectCandidates`). Reference flow for 3 words all starting in
+  round 1: w1-intro -> w1-t1 -> w2-intro -> w2-t1 -> w3-t1 -> w1-t2 -> w2-t2 ...
+  (round continues until every word's exercise queue is drained; a word with fewer
+  exercises just drops out of later rounds).
 - Item identifier is `itemId`. Results submitted in /complete reference `itemId`
   and come only from exercise items (intro cards are never submitted).
 
 ## Exercise generation rules
 
 - Exercises are server-generated and fully built. Client renders + reports only.
-- Each exercise item = envelope (itemId, itemType=exercise, exerciseType, lexemeId,
-  formType) + prompt {text, lang} + exercise {type-specific payload + correct answer}.
+- Each exercise item = envelope (itemId, itemType=exercise, exerciseType,
+  lexemeId, formType) + prompt {text, lang} + exercise {type-specific payload
+  + correct answer}.
 - `lang` lives in `prompt` (and `optionsLang` in the payload when the answer side
   differs) — NEVER at root, because a translation exercise spans two languages.
 - Instruction labels are constant-per-type and localized CLIENT-side — never sent
@@ -148,7 +168,15 @@ No stored flag.
   nothing.
 - assemble: letters are longer than the answer (~1.5x), shuffled, may contain
   duplicates; treat as an ordered array (positional). Decoy letters from the
-  target-language alphabet (include å/ä/ö for Swedish).
+  target-language alphabet (include å/ä/ö for Swedish). The target is ALWAYS
+  the word's citation/base form (e.g. `gå`, never `gick`) — the prompt is the
+  LEXEME-level translation, which names the citation form, so a non-citation
+  target would show a mismatched clue. Applies to every pos, not just
+  pronouns (pronoun case forms translate to genuinely different English
+  words — I/my/me — which is what originally motivated this; other pos have
+  the same mismatch, just less jarringly). No form variety for assemble as a
+  result — produce_form/multi_select are what vary the tested form across a
+  word's encounters (`ExerciseGenerator.buildAssemble`).
 - Distractors for choice types: same target-language, same pos, near freq_rank,
   excluding the answer. Mixed-pos distractors are too easy — avoid.
 - Which types a word supports is a data precondition (en_ett needs pos=noun +
@@ -157,8 +185,25 @@ No stored flag.
   nothing rather than failing.
 - List coherence (every word supports ≥1 of the list's allowed_exercises) is
   validated at data-load time, not enforced by schema.
+- `produce_form` is EXCLUDED from a brand-new word's exercise queue (its own
+  session, `isNew=true`) whenever another eligible type exists: the intro card
+  just shown for that word displays its full paradigm, and produce_form's
+  distractors are sibling forms of that same paradigm — so its answer key would
+  be sitting a few items above it in the same response. Safety valve: if
+  produce_form is the word's ONLY eligible type, it's queued anyway (a word must
+  never end up with zero exercises). Fair game from the word's next session
+  onward, once the card is no longer part of what's on screen
+  (`ExerciseGenerator.buildExerciseQueue`).
+- `produce_form`'s prompt names the target inflection, e.g. `"flicka (definite
+  singular)"` not bare `"flicka"` — its options are sibling forms of the SAME
+  word (flickan/flickor/flickorna), every one a grammatically valid word, so the
+  bare citation form alone doesn't say which sibling is wanted and more than one
+  option reads as defensibly correct. The label comes from a hardcoded
+  form_type→"full name" map in `CitationFormResolver` (Swedish-only for now,
+  mirroring the catalog in `doc/app-info/Data/word_form.md`); `formType` in the
+  envelope still carries the raw code for logging/analytics.
 
-## API (see openapi.yaml)
+## API (see doc/api/swagger.yaml)
 
 - REST, JSON, camelCase. Plural resource nouns.
 - JWT bearer auth. USER ID COMES FROM THE TOKEN SUBJECT — never from path/body.
@@ -174,11 +219,16 @@ No stored flag.
 - Errors: { error: { status, code, message, traceId } }. Clients branch on
   `code` (stable string), never on `message`.
 
-**Current implementation status (as of 2026-07-28): auth is intentionally not
-built yet.** `AuthController` is a stub (canned `TokenPair`, no real
-register/login/refresh/logout) and there is no `security/` package content —
-do not touch either while implementing other features; this is a deliberate,
-user-directed sequencing decision, not an oversight. Endpoints that the API
+**Current implementation status: real auth (JWT/password verification) is
+intentionally not built yet — but the surrounding account/email/reset
+infrastructure is (see "Auth-adjacent infrastructure" above).** `AuthController`
+always returns a canned `TokenPair`; `login`/`refresh`/`logout` verify nothing
+(no password check, no token validation). `register`/`reset/*` DO real work
+(persist the account row, generate verification codes/signed links, send
+email) — only token issuance and verification are stubbed. There is no
+`security/` package content — do not add one while implementing other
+features; this is a deliberate, user-directed sequencing decision, not an
+oversight. Endpoints that the API
 design says should read the user id from the token instead resolve it via
 `CurrentUserProvider` (`service/CurrentUserProvider.java`), a one-method seam
 with a single implementation, `StubCurrentUserProvider`, that always returns
@@ -187,18 +237,29 @@ should depend on `CurrentUserProvider`, never a hardcoded id inline — when
 real auth lands, only `StubCurrentUserProvider` gets replaced (with a
 `SecurityContext`/token-subject-backed implementation); no call site changes.
 
-**Endpoint implementation status:** Catalog, Progress, and Enrollment are
-real, DB-backed. Auth is a stub. Session (`/enrollments/{listId}/sessions`,
-`/sessions/{sessionId}/*`) has scaffolding only (reverted 2026-07-28 after a
-full implementation was tried and rolled back — see git history if the
-generation logic needs re-deriving): `SessionController` delegates to
-`SessionService`, which has `ListItemRepository`/`ListProgressRepository`/
-`WordFormRepository`/`LexemeRepository`/`TranslationRepository`/
-`AttemptRepository`/`LearningSessionRepository`/`AccountRepository`/
-`WordListRepository`/`EnrollmentService` wired into its constructor, but
-every method still returns the same canned `SessionResponse`/
-`CompleteResponse`/`WordProgress` values the controller used to hardcode
-directly — see the `// TODO` on each method.
+**Endpoint implementation status:** Catalog, Progress, Enrollment, and Session
+are all real, DB-backed. Auth is a stub (see above). `SessionController`
+delegates to `SessionService`:
+- `deriveSession` (`POST /enrollments/{listId}/sessions`): `SessionScheduler.
+  selectCandidates` picks review words (not-yet-mastered first, then mastered,
+  capped at `app.session.review-words-per-session`) plus never-started words
+  (capped at `app.session.new-words-per-session`); `ExerciseGenerator.
+  buildExerciseQueue` builds each word's queue (up to `app.session.
+  exercises-per-word-per-session`); `IntroCardBuilder` builds the intro card for
+  new words; `interleave` round-robins them into the final `items` array (see
+  "Session items and interleaving" above). The derived session is held in an
+  in-memory `pendingSessions` map keyed by a random `sessionId` — deliberately
+  NOT a DB row (`sessions` table only logs completed sessions) and NOT
+  transactional (won't survive a restart; that's intentional).
+- `completeSession` (`POST /sessions/{sessionId}/complete`): pops the pending
+  session (404 if `sessionId` is unknown or already consumed — NOT idempotent,
+  a second call for the same session 404s rather than replaying), writes one
+  `attempt` row + upserts `list_progress` per result, writes one `sessions` row,
+  then runs `EnrollmentService.completeIfMastered`.
+- Mastery/session-size knobs all live in `SessionProperties`
+  (`app.session.*` in `application.yml`) — `wordsPerSession`,
+  `newWordsPerSession`, `exercisesPerWordPerSession`, `reviewWordsPerSession`,
+  `masteryThreshold` — tunable placeholders, not fixed product decisions.
 
 Enrollment specifics: `/lists/{listId}/enroll` is idempotent by
 (userId, listId) — `EnrollmentService.enroll` returns `EnrollResult(enrollment,
@@ -215,10 +276,18 @@ fields to `ProgressService` — don't duplicate that mapping in a third place.
 
 ## Reference files in this repo
 
-- `openapi.yaml` — full API spec (OpenAPI 3.1), source of truth for endpoints and
-  payload schemas.
-- `01_schema.sql` — the PostgreSQL DDL. `02_seed.sql` — sample data (ett hus,
-  att gå, jag in sv+en, plus a curated list and a user sample).
+- `doc/api/swagger.yaml` — full API spec (OpenAPI 3.1), source of truth for
+  endpoints and payload schemas.
+- `src/main/resources/db/01_schema.sql` — the PostgreSQL DDL.
+- `src/main/resources/db/seed_base.sql` — foundational, idempotent reference
+  data (languages + base account) the app needs to function, independent of
+  any learning content. `seed_first50.sql` — 50 sv<->en concept pairs across
+  three curated lists (POS-aligned, both languages full targets). Run
+  `seed_base.sql` first, then a content seed.
+- `src/main/resources/db/clear_user_activity.sql` / `wipe_except_basic.sql` /
+  `wipe_all.sql` — three widening levels of reset: user activity only /
+  activity + catalog (keep language + account) / everything. See each file's
+  header comment for the exact table list.
 - The `.md` files (lexeme, word_form, translation, list, list_item, account,
   user_list, list_progress, sessions, attempt, etc.) are the design knowledge
   base — per-table specs with rationale.
@@ -234,8 +303,17 @@ fields to `ProgressService` — don't duplicate that mapping in a third place.
 - form_type is open text; exercise_type is a closed enum. Respect that asymmetry.
 - Don't reintroduce a sense/concept layer, per-account base_lang, or precomputed
   sessions — all were considered and deliberately dropped.
-- Swedish specifics: cite nouns as "en/ett + lemma", verbs as "att + lemma";
-  never surface a bare noun without its article.
+- Swedish specifics (for INGESTION, which builds lexeme.citation): nouns cited as
+  "en/ett + lemma", verbs as "att + lemma". The server never does this - it reads
+  the stored lexeme.citation. Never surface a bare noun without its article.
+- Citation headwords are STORED in lexeme.citation and READ by the server, which is
+  LANGUAGE-AGNOSTIC and composes nothing. Ingestion builds them per language
+  (sv: 'ett hus'/'att ga'; en: 'to go'/bare noun) and stores them. Do NOT add
+  att/to/en/ett composition logic to the server - read lexeme.citation.
+- Every lexeme is FIRST-CLASS in every language: full infl_class + tema + word_form
+  paradigm. English is a full learning target (can be learned from uk/ru), NOT
+  meaning-only. Translations are POS-ALIGNED (noun<->noun, verb<->verb, adj<->adj) -
+  the translate exercise links same part of speech on both sides.
 - Don't implement auth/security (see "Current implementation status" above).
   Need the current user? Inject `CurrentUserProvider`, don't hardcode an id
   or add ad-hoc auth logic to get one.

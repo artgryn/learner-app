@@ -31,6 +31,11 @@ public class Lexeme {
     @Column(nullable = false)
     private String lemma;
 
+    // Ready-to-display headword ("ett hus", "att gå", "to go"). Composed and
+    // stored by INGESTION per language; the server reads this and never
+    // composes articles/markers itself (doc/app-info/Data/lexeme.md).
+    private String citation;
+
     @Column(nullable = false)
     private String pos;
 
@@ -56,6 +61,8 @@ public class Lexeme {
     public void setLanguage(Language language) { this.language = language; }
     public String getLemma() { return lemma; }
     public void setLemma(String lemma) { this.lemma = lemma; }
+    public String getCitation() { return citation; }
+    public void setCitation(String citation) { this.citation = citation; }
     public String getPos() { return pos; }
     public void setPos(String pos) { this.pos = pos; }
     public String getGender() { return gender; }

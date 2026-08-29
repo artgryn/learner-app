@@ -9,11 +9,11 @@ spring:
     url: jdbc:postgresql://localhost:15432/learner_db
     username: myuser
     password: secret
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:db/01_schema.sql
-      data-locations: classpath:db/02_seed.sql
+#  sql:
+#    init:
+#      mode: always
+#      schema-locations: classpath:db/01_schema.sql
+#      data-locations: classpath:db/seed_base.sql
   jpa:
     hibernate:
       ddl-auto: validate

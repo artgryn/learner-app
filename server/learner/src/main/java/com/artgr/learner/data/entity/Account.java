@@ -24,12 +24,6 @@ public class Account {
     @Column(nullable = false, unique = true)
     private String email;
 
-    // BCrypt hash. Set by POST /auth/register and /auth/reset/confirm only.
-    // Nullable - seeded/legacy rows have none. Never returned by any DTO
-    // (AccountView etc. deliberately omit it).
-    @Column(name = "password_hash")
-    private String passwordHash;
-
     // Display name; set via PATCH /me (init_account calls this same endpoint
     // post-registration - there is no separate init endpoint).
     private String name;
@@ -59,11 +53,8 @@ public class Account {
     private OffsetDateTime createdAt;
 
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
-    public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public Language getUiLang() { return uiLang; }
@@ -75,5 +66,4 @@ public class Account {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -31,6 +31,8 @@ public class EnrollmentMapper {
                 EnrollmentStatus.valueOf(enrollment.getStatus()),
                 progressService.wordsMastered(userId, listId),
                 progressService.totalWords(listId),
+                progressService.exercisesCompleted(userId, listId),
+                progressService.exercisesNeeded(listId),
                 new Enrollment.SessionsSummary(
                         progressService.sessionsDone(userId, listId),
                         progressService.estimatedTotalSessions(listId)

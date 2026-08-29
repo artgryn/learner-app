@@ -3,6 +3,7 @@
 | `id` | `bigint` PK (identity) | number |
 | `lang` | `char(2)` NOT NULL, FK → language.code | string |
 | `lemma` | `text` NOT NULL | string |
+| `citation` | `text` (nullable) | string |
 | `pos` | `text` NOT NULL | string |
 | `gender` | `text` (nullable) | string |
 | `infl_class` | `text` (nullable) | string |
@@ -11,6 +12,15 @@
 | `freq_rank` | `int` (nullable) | number |
 
 **Unique:** (`lang`, `lemma`, `pos`)
+
+### `citation` — stored display headword (server is language-agnostic)
+The ready-to-display headword: `ett hus`, `att gå`, `to go`, `sun`. **Composed by
+ingestion per language and STORED here; the server reads it and never composes
+articles/markers itself.** This keeps server code language-agnostic — all
+language-specific string assembly lives in data/ingestion, like `form_type` being
+open text rather than a per-language enum. Retires the old "compose citation from
+pos+lang server-side" rule and the proposed `is_citation` flag (ingestion just stores
+the correct string, including for defective words like *pengar*).
 
 ### `tema` vs [[word_form]] — they look similar, they are not
 Both hold inflected forms; the difference is *why each exists* (store-vs-derive):
@@ -38,3 +48,4 @@ that gap is the point (otherwise regular words would store every form twice).
 **Other notes**
 - `note` carries translation nuance (e.g. `gå` → `'to go, to walk'`).
 - One lexeme = one word in one language; translation attaches at the **lexeme**, not the form.
+- **Every lexeme is first-class in every language.** English lexemes carry full `infl_class` + `tema` + [[word_form]] paradigms, same as Swedish, because English is a learning target too (e.g. learned from Ukrainian/Russian). No language is meaning-only. Translations are POS-aligned (noun<->noun, verb<->verb, adj<->adj).

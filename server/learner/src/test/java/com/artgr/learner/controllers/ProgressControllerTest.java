@@ -29,6 +29,8 @@ class ProgressControllerTest {
                 .andExpect(jsonPath("$.enrollments[0].status").value("active"))
                 .andExpect(jsonPath("$.enrollments[0].totalWords").value(3))
                 .andExpect(jsonPath("$.enrollments[0].wordsMastered").value(0))
+                .andExpect(jsonPath("$.enrollments[0].exercisesCompleted").value(0))
+                .andExpect(jsonPath("$.enrollments[0].exercisesNeeded").value(9))
                 .andExpect(jsonPath("$.enrollments[0].sessions.done").value(0))
                 .andExpect(jsonPath("$.resume.listId").value(1));
     }

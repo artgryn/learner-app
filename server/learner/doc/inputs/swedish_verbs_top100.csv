@@ -1,0 +1,101 @@
+approx_rank,lemma,present,preteritum,supine,class,english
+1,vara,är,var,varit,irregular,to be
+2,ha,har,hade,haft,irregular,to have
+3,bli,blir,blev,blivit,strong,to become
+4,kunna,kan,kunde,kunnat,irregular,can / be able to
+5,skola,ska,skulle,skolat,irregular,shall / will
+6,komma,kommer,kom,kommit,strong,to come
+7,vilja,vill,ville,velat,irregular,to want
+8,få,får,fick,fått,strong,to get / may
+9,göra,gör,gjorde,gjort,irregular,to do / make
+10,säga,säger,sade,sagt,irregular,to say
+11,ta,tar,tog,tagit,strong,to take
+12,se,ser,såg,sett,strong,to see
+13,gå,går,gick,gått,strong,to go / walk
+14,veta,vet,visste,vetat,irregular,to know
+15,måste,måste,måste,måst,irregular,must (defective)
+16,ge,ger,gav,gett,strong,to give
+17,stå,står,stod,stått,strong,to stand
+18,finnas,finns,fanns,funnits,deponent,to exist
+19,tro,tror,trodde,trott,weak3,to believe
+20,tycka,tycker,tyckte,tyckt,weak2b,to think / opine
+21,behöva,behöver,behövde,behövt,weak2a,to need
+22,börja,börjar,började,börjat,weak1,to begin
+23,tänka,tänker,tänkte,tänkt,weak2b,to think
+24,hitta,hittar,hittade,hittat,weak1,to find
+25,sitta,sitter,satt,suttit,strong,to sit
+26,använda,använder,använde,använt,weak2a,to use
+27,arbeta,arbetar,arbetade,arbetat,weak1,to work
+28,finna,finner,fann,funnit,strong,to find
+29,ligga,ligger,låg,legat,strong,to lie
+30,heta,heter,hette,hetat,irregular,to be called
+31,mena,menar,menade,menat,weak1,to mean
+32,leva,lever,levde,levt,weak2a,to live
+33,bo,bor,bodde,bott,weak3,to live / reside
+34,hålla,håller,höll,hållit,strong,to hold
+35,följa,följer,följde,följt,weak2a,to follow
+36,förstå,förstår,förstod,förstått,strong,to understand
+37,känna,känner,kände,känt,weak2a,to feel / know
+38,lägga,lägger,lade,lagt,irregular_weak,to lay / put
+39,sätta,sätter,satte,satt,irregular_weak,to set / put
+40,spela,spelar,spelade,spelat,weak1,to play
+41,fråga,frågar,frågade,frågat,weak1,to ask
+42,svara,svarar,svarade,svarat,weak1,to answer
+43,titta,tittar,tittade,tittat,weak1,to look
+44,vänta,väntar,väntade,väntat,weak1,to wait
+45,visa,visar,visade,visat,weak1,to show
+46,betala,betalar,betalade,betalat,weak1,to pay
+47,läsa,läser,läste,läst,weak2b,to read
+48,skriva,skriver,skrev,skrivit,strong,to write
+49,köpa,köper,köpte,köpt,weak2b,to buy
+50,äta,äter,åt,ätit,strong,to eat
+51,dricka,dricker,drack,druckit,strong,to drink
+52,sova,sover,sov,sovit,strong,to sleep
+53,springa,springer,sprang,sprungit,strong,to run
+54,hjälpa,hjälper,hjälpte,hjälpt,weak2b,to help
+55,sluta,slutar,slutade,slutat,weak1,to stop / finish
+56,öppna,öppnar,öppnade,öppnat,weak1,to open
+57,stänga,stänger,stängde,stängt,weak2a,to close
+58,hända,händer,hände,hänt,weak2a,to happen
+59,bygga,bygger,byggde,byggt,weak2a,to build
+60,köra,kör,körde,kört,weak2a,to drive
+61,höra,hör,hörde,hört,weak2a,to hear
+62,lära,lär,lärde,lärt,weak2a,to teach / learn
+63,söka,söker,sökte,sökt,weak2b,to search
+64,möta,möter,mötte,mött,weak2b,to meet
+65,glömma,glömmer,glömde,glömt,weak2a,to forget
+66,minnas,minns,mindes,mints,deponent,to remember
+67,hoppas,hoppas,hoppades,hoppats,deponent,to hope
+68,lyckas,lyckas,lyckades,lyckats,deponent,to succeed
+69,trivas,trivs,trivdes,trivts,deponent,to be content
+70,verka,verkar,verkade,verkat,weak1,to seem
+71,bära,bär,bar,burit,strong,to carry
+72,dra,drar,drog,dragit,strong,to pull
+73,slå,slår,slog,slagit,strong,to hit
+74,falla,faller,föll,fallit,strong,to fall
+75,vinna,vinner,vann,vunnit,strong,to win
+76,sjunga,sjunger,sjöng,sjungit,strong,to sing
+77,flyga,flyger,flög,flugit,strong,to fly
+78,bjuda,bjuder,bjöd,bjudit,strong,to offer / invite
+79,välja,väljer,valde,valt,irregular_weak,to choose
+80,sälja,säljer,sålde,sålt,irregular_weak,to sell
+81,lämna,lämnar,lämnade,lämnat,weak1,to leave
+82,stanna,stannar,stannade,stannat,weak1,to stay / stop
+83,hämta,hämtar,hämtade,hämtat,weak1,to fetch
+84,berätta,berättar,berättade,berättat,weak1,to tell
+85,prata,pratar,pratade,pratat,weak1,to talk
+86,tala,talar,talade,talat,weak1,to speak
+87,kalla,kallar,kallade,kallat,weak1,to call / name
+88,skapa,skapar,skapade,skapat,weak1,to create
+89,ändra,ändrar,ändrade,ändrat,weak1,to change
+90,älska,älskar,älskade,älskat,weak1,to love
+91,resa,reser,reste,rest,weak2b,to travel
+92,åka,åker,åkte,åkt,weak2b,to go / travel
+93,leka,leker,lekte,lekt,weak2b,to play
+94,byta,byter,bytte,bytt,weak2b,to change / swap
+95,betyda,betyder,betydde,betytt,weak2a,to mean
+96,bestämma,bestämmer,bestämde,bestämt,weak2a,to decide
+97,förklara,förklarar,förklarade,förklarat,weak1,to explain
+98,fortsätta,fortsätter,fortsatte,fortsatt,irregular_weak,to continue
+99,undra,undrar,undrade,undrat,weak1,to wonder
+100,skicka,skickar,skickade,skickat,weak1,to send

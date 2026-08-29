@@ -17,18 +17,16 @@ import com.artgr.learner.service.ResetLinkTokenService;
 import com.artgr.learner.service.VerificationCodeStore;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 // Auth stays STUBBED (doc/CLAUDE.md): login/refresh/logout return canned
-// tokens and do not verify anything. Register and the reset/* endpoints now
-// persist real data (account row, password hash) because the ticket
-// (doc/prompt_2.md) explicitly asked for that much - but they are still not
-// wired to login, and there is no JWT/session/security filter chain here.
+// tokens and do not verify anything. No password is hashed or stored -
+// everyone who registers/resets is implicitly "authenticated"; there is no
+// JWT/session/security filter chain here. Register and reset/* still persist
+// the account row and drive the email/verification-code flows.
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -39,7 +37,6 @@ public class AuthController {
 
     private final AccountRepository accountRepository;
     private final LanguageRepository languageRepository;
-    private final PasswordEncoder passwordEncoder;
     private final VerificationCodeStore verificationCodeStore;
     private final ResetLinkTokenService resetLinkTokenService;
     private final EmailService emailService;
@@ -47,14 +44,12 @@ public class AuthController {
     public AuthController(
             AccountRepository accountRepository,
             LanguageRepository languageRepository,
-            PasswordEncoder passwordEncoder,
             VerificationCodeStore verificationCodeStore,
             ResetLinkTokenService resetLinkTokenService,
             EmailService emailService
     ) {
         this.accountRepository = accountRepository;
         this.languageRepository = languageRepository;
-        this.passwordEncoder = passwordEncoder;
         this.verificationCodeStore = verificationCodeStore;
         this.resetLinkTokenService = resetLinkTokenService;
         this.emailService = emailService;
@@ -68,7 +63,6 @@ public class AuthController {
 
         Account account = new Account();
         account.setEmail(request.email());
-        account.setPasswordHash(passwordEncoder.encode(request.password()));
         // Hibernate always sends an explicit value on INSERT, so the column's
         // DEFAULT 'en' (01_schema.sql) never fires for JPA-created rows - set
         // it here instead. Only raw-SQL seed rows benefit from the DB default.
@@ -109,7 +103,6 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    @Transactional
     @PostMapping("/reset/confirm")
     public ResponseEntity<Void> resetConfirm(@RequestBody ResetConfirmRequest request) {
         boolean verified;
@@ -124,10 +117,11 @@ public class AuthController {
             throw new BadRequestException("INVALID_OR_EXPIRED_CODE", "The reset code or link is invalid or expired");
         }
 
-        Account account = accountRepository.findByEmail(request.email())
+        // Nothing left to persist: no password hash is stored (see class
+        // comment). The verified code/token is consumed above; that's the
+        // entire "reset" as far as this stub goes.
+        accountRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BadRequestException("INVALID_OR_EXPIRED_CODE", "The reset code or link is invalid or expired"));
-        account.setPasswordHash(passwordEncoder.encode(request.newPassword()));
-        accountRepository.save(account);
 
         return ResponseEntity.noContent().build();
     }

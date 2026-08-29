@@ -65,7 +65,43 @@ class ExerciseGeneratorTest {
 
         Lexeme house = lexeme(2L, EN, "house", "noun", null, 500);
         Translation translation = translation(hus, house);
+        // translate also needs the PARTNER (house) to have a same-pos
+        // sibling to draw distractors from - see translateRequiresSamePosDistractors.
+        Lexeme car = lexeme(8L, EN, "car", "noun", null, 250);
+        when(lexemeRepository.findDistractorCandidates("en", "noun", 2L, 500)).thenReturn(List.of(car));
         assertTrue(generator(1).eligibleTypes(hus, forms, List.of(translation), LanguageCode.en).contains(ExerciseType.translate));
+    }
+
+    @Test
+    void translateRequiresSamePosDistractorsOnTheTranslationPartner() {
+        // translate's distractors are drawn from the PARTNER's (base
+        // language) same-pos pool, not the lexeme's own - a translation link
+        // alone isn't enough if the base-language side has no sibling.
+        Lexeme hus = lexeme(1L, SV, "hus", "noun", "ett", 600);
+        List<WordForm> forms = List.of(form(1L, "indef_sg", "hus"));
+        Lexeme house = lexeme(2L, EN, "house", "noun", null, 500);
+        Translation translation = translation(hus, house);
+
+        when(lexemeRepository.findDistractorCandidates("en", "noun", 2L, 500)).thenReturn(List.of());
+        assertFalse(generator(1).eligibleTypes(hus, forms, List.of(translation), LanguageCode.en).contains(ExerciseType.translate),
+                "no same-pos sibling for 'house' in English -> translate must not be offered");
+    }
+
+    @Test
+    void baseFormRequiresSamePosDistractorsOnTheLexemeItself() {
+        // Mirrors multiSelectRequiresTwoFormsAndSamePosDistractors, for
+        // base_form's own guard (it draws distractors from the lexeme's OWN
+        // same-pos pool, not a translation partner's).
+        Lexeme hus = lexeme(1L, SV, "hus", "noun", "ett", 600);
+        List<WordForm> forms = List.of(form(1L, "indef_sg", "hus"), form(1L, "def_sg", "huset"));
+
+        when(lexemeRepository.findDistractorCandidates("sv", "noun", 1L, 600)).thenReturn(List.of());
+        assertFalse(generator(1).eligibleTypes(hus, forms, List.of(), LanguageCode.en).contains(ExerciseType.base_form),
+                "no same-pos sibling for 'hus' in Swedish -> base_form must not be offered");
+
+        Lexeme bil = lexeme(7L, SV, "bil", "noun", "en", 300);
+        when(lexemeRepository.findDistractorCandidates("sv", "noun", 1L, 600)).thenReturn(List.of(bil));
+        assertTrue(generator(1).eligibleTypes(hus, forms, List.of(), LanguageCode.en).contains(ExerciseType.base_form));
     }
 
     @Test
@@ -77,7 +113,7 @@ class ExerciseGeneratorTest {
         List<WordForm> forms = List.of(form(5L, "subject", "jag"), form(5L, "object", "mig"));
 
         List<ExerciseGenerator.GeneratedExercise> queue = generator(1)
-                .buildExerciseQueue(jag, forms, List.of(), Set.of(ExerciseType.en_ett), LanguageCode.sv, LanguageCode.en, 2);
+                .buildExerciseQueue(jag, forms, List.of(), Set.of(ExerciseType.en_ett), LanguageCode.sv, LanguageCode.en, 2, false);
 
         assertTrue(queue.isEmpty());
     }
@@ -115,7 +151,7 @@ class ExerciseGeneratorTest {
         when(wordFormRepository.findByLexemeId(11L)).thenReturn(List.of());
 
         ExerciseGenerator.GeneratedExercise exercise = generator(1)
-                .buildExerciseQueue(hus, husForms, List.of(translation), Set.of(ExerciseType.translate), LanguageCode.sv, LanguageCode.en, 1)
+                .buildExerciseQueue(hus, husForms, List.of(translation), Set.of(ExerciseType.translate), LanguageCode.sv, LanguageCode.en, 1, false)
                 .get(0);
 
         TranslatePayload payload = (TranslatePayload) exercise.exercise();
@@ -130,7 +166,7 @@ class ExerciseGeneratorTest {
         List<WordForm> forms = List.of(form(1L, "indef_sg", "hus"));
 
         ExerciseGenerator.GeneratedExercise ex1 = generator(1)
-                .buildExerciseQueue(hus, forms, List.of(), Set.of(ExerciseType.en_ett), LanguageCode.sv, LanguageCode.en, 1)
+                .buildExerciseQueue(hus, forms, List.of(), Set.of(ExerciseType.en_ett), LanguageCode.sv, LanguageCode.en, 1, false)
                 .get(0);
         EnEttPayload payload = (EnEttPayload) ex1.exercise();
         assertEquals(Set.of("en", "ett"), Set.copyOf(payload.options()));
@@ -150,8 +186,8 @@ class ExerciseGeneratorTest {
                 form(3L, "supine", "gått")
         );
 
-        var a = generator(42).buildExerciseQueue(ga, forms, List.of(), Set.of(ExerciseType.produce_form), LanguageCode.sv, LanguageCode.en, 1).get(0);
-        var b = generator(42).buildExerciseQueue(ga, forms, List.of(), Set.of(ExerciseType.produce_form), LanguageCode.sv, LanguageCode.en, 1).get(0);
+        var a = generator(42).buildExerciseQueue(ga, forms, List.of(), Set.of(ExerciseType.produce_form), LanguageCode.sv, LanguageCode.en, 1, false).get(0);
+        var b = generator(42).buildExerciseQueue(ga, forms, List.of(), Set.of(ExerciseType.produce_form), LanguageCode.sv, LanguageCode.en, 1, false).get(0);
 
         OptionsPayload pa = (OptionsPayload) a.exercise();
         OptionsPayload pb = (OptionsPayload) b.exercise();
@@ -167,7 +203,7 @@ class ExerciseGeneratorTest {
         List<WordForm> forms = List.of(form(3L, "preteritum", "gick"));
 
         ExerciseGenerator.GeneratedExercise ex = generator(1)
-                .buildExerciseQueue(ga, forms, List.of(translation), Set.of(ExerciseType.assemble), LanguageCode.sv, LanguageCode.en, 1)
+                .buildExerciseQueue(ga, forms, List.of(translation), Set.of(ExerciseType.assemble), LanguageCode.sv, LanguageCode.en, 1, false)
                 .get(0);
         AssemblePayload payload = (AssemblePayload) ex.exercise();
 
@@ -182,23 +218,121 @@ class ExerciseGeneratorTest {
     }
 
     @Test
-    void baseFormAnswerIsComposedWithArticleForSwedishNounButNotForEnglish() {
+    void assembleAlwaysTargetsTheCitationFormForEveryPos() {
+        // The assemble prompt is always the LEXEME-level translation (e.g.
+        // "I", "go"), which names the CITATION form, not any particular
+        // inflection - a non-citation target would show a mismatched clue.
+        // Over many draws, only the citation form may ever be the answer -
+        // for every pos, not just pronouns (see buildAssemble).
+        Lexeme jag = lexeme(5L, SV, "jag", "pronoun", null, 5);
+        Lexeme i = lexeme(6L, EN, "I", "pronoun", null, 3);
+        Translation translation = translation(jag, i);
+        List<WordForm> forms = List.of(
+                form(5L, "subject", "jag"), form(5L, "object", "mig"),
+                form(5L, "possessive_c", "min"), form(5L, "possessive_n", "mitt"), form(5L, "possessive_pl", "mina")
+        );
+
+        for (long seed = 0; seed < 20; seed++) {
+            ExerciseGenerator.GeneratedExercise ex = generator(seed)
+                    .buildExerciseQueue(jag, forms, List.of(translation), Set.of(ExerciseType.assemble), LanguageCode.sv, LanguageCode.en, 1, false)
+                    .get(0);
+            AssemblePayload payload = (AssemblePayload) ex.exercise();
+            assertEquals("jag", payload.correctAnswer(), "pronoun assemble must always target the citation form");
+        }
+
+        // Verbs must ALSO always target the citation form (infinitive) now -
+        // no more form variety for assemble, unlike produce_form/multi_select.
+        Lexeme ga = lexeme(3L, SV, "gå", "verb", null, 80);
+        Lexeme go = lexeme(4L, EN, "go", "verb", null, 40);
+        Translation gaTranslation = translation(ga, go);
+        List<WordForm> gaForms = List.of(
+                form(3L, "infinitive", "gå"), form(3L, "present", "går"), form(3L, "preteritum", "gick")
+        );
+        for (long seed = 0; seed < 20; seed++) {
+            ExerciseGenerator.GeneratedExercise ex = generator(seed)
+                    .buildExerciseQueue(ga, gaForms, List.of(gaTranslation), Set.of(ExerciseType.assemble), LanguageCode.sv, LanguageCode.en, 1, false)
+                    .get(0);
+            assertEquals("gå", ((AssemblePayload) ex.exercise()).correctAnswer(),
+                    "verb assemble must always target the citation form (infinitive)");
+        }
+    }
+
+    @Test
+    void produceFormNeverAppearsAnywhereInANewWordsExerciseQueue() {
+        // The intro card for a NEW word displays its FULL paradigm -
+        // produce_form's distractors ARE those sibling forms, so it must not
+        // appear ANYWHERE in this session's queue for the word (not just
+        // slot 0 - every produce_form exercise this session would have its
+        // whole answer key sitting a few items above it in the same
+        // response). It's fine once the word already has history (isNew=false).
+        Lexeme ga = lexeme(3L, SV, "gå", "verb", null, 80);
+        Lexeme go = lexeme(4L, EN, "go", "verb", null, 40);
+        Translation translation = translation(ga, go);
+        List<WordForm> forms = List.of(
+                form(3L, "infinitive", "gå"), form(3L, "present", "går"), form(3L, "preteritum", "gick")
+        );
+        // assemble and produce_form are both eligible for gå without any
+        // distractor stubbing (assemble needs a translation, produce_form
+        // needs sibling forms) - two eligible types is enough to prove the
+        // exclusion.
+        Set<ExerciseType> allTypes = Set.of(ExerciseType.assemble, ExerciseType.produce_form);
+
+        for (long seed = 0; seed < 30; seed++) {
+            List<ExerciseGenerator.GeneratedExercise> queue = generator(seed)
+                    .buildExerciseQueue(ga, forms, List.of(translation), allTypes, LanguageCode.sv, LanguageCode.en, 2, true);
+            assertTrue(queue.stream().noneMatch(e -> e.exerciseType() == ExerciseType.produce_form),
+                    "produce_form must not appear anywhere in a new word's queue (seed " + seed + ")");
+            assertTrue(queue.stream().anyMatch(e -> e.exerciseType() == ExerciseType.assemble),
+                    "assemble should still be queued as the fallback (seed " + seed + ")");
+        }
+    }
+
+    @Test
+    void produceFormIsAllowedForANewWordWhenItIsTheOnlyEligibleType() {
+        // Safety valve: excluding produce_form must never leave a new word
+        // with zero exercises - that would mean no /complete result is ever
+        // submitted for it, no list_progress row is ever created, and it
+        // would stay "new" (and therefore excluded) forever. Better to give
+        // its one remaining exercise than none.
+        Lexeme ga = lexeme(3L, SV, "gå", "verb", null, 80);
+        List<WordForm> forms = List.of(
+                form(3L, "infinitive", "gå"), form(3L, "present", "går"), form(3L, "preteritum", "gick")
+        );
+        // No translation supplied -> assemble/translate ineligible; no
+        // distractor stub -> base_form/multi_select ineligible. produce_form
+        // (sibling-form-based) is the only type left standing.
+        List<ExerciseGenerator.GeneratedExercise> queue = generator(1)
+                .buildExerciseQueue(ga, forms, List.of(), Set.of(ExerciseType.produce_form), LanguageCode.sv, LanguageCode.en, 1, true);
+
+        assertEquals(1, queue.size());
+        assertEquals(ExerciseType.produce_form, queue.get(0).exerciseType());
+    }
+
+    @Test
+    void baseFormAnswerIsTheStoredCitationNotServerComposed() {
         Lexeme hus = lexeme(1L, SV, "hus", "noun", "ett", 600);
+        hus.setCitation("ett hus");
         List<WordForm> husForms = List.of(form(1L, "indef_sg", "hus"), form(1L, "def_sg", "huset"));
-        when(lexemeRepository.findDistractorCandidates("sv", "noun", 1L, 600)).thenReturn(List.of());
+        Lexeme bil = lexeme(7L, SV, "bil", "noun", "en", 300);
+        bil.setCitation("en bil");
+        when(lexemeRepository.findDistractorCandidates("sv", "noun", 1L, 600)).thenReturn(List.of(bil));
+        when(wordFormRepository.findByLexemeId(7L)).thenReturn(List.of(form(7L, "indef_sg", "bil")));
 
         ExerciseGenerator.GeneratedExercise ex = generator(1)
-                .buildExerciseQueue(hus, husForms, List.of(), Set.of(ExerciseType.base_form), LanguageCode.sv, LanguageCode.en, 1)
+                .buildExerciseQueue(hus, husForms, List.of(), Set.of(ExerciseType.base_form), LanguageCode.sv, LanguageCode.en, 1, false)
                 .get(0);
         OptionsPayload payload = (OptionsPayload) ex.exercise();
         assertEquals("ett hus", payload.correctAnswer());
 
-        // English verb must never get the Swedish "att" marker.
+        // English verbs are cited "to " + lemma by ingestion (dictionary
+        // convention, doc/app-info/Data/word_form.md) - the server just
+        // echoes whatever is stored, never composes it.
         Lexeme go = lexeme(4L, EN, "go", "verb", null, 40);
+        go.setCitation("to go");
         List<WordForm> goForms = List.of(form(4L, "infinitive", "go"), form(4L, "preteritum", "went"));
         when(wordFormRepository.findByLexemeId(4L)).thenReturn(goForms);
         String composed = citationFormResolver.composedWord(go, goForms);
-        assertEquals("go", composed);
+        assertEquals("to go", composed);
     }
 
     @Test
@@ -214,7 +348,7 @@ class ExerciseGeneratorTest {
         when(wordFormRepository.findByLexemeId(7L)).thenReturn(List.of(form(7L, "infinitive", "springa"), form(7L, "present", "springer")));
 
         ExerciseGenerator.GeneratedExercise ex = generator(1)
-                .buildExerciseQueue(ga, forms, List.of(), Set.of(ExerciseType.multi_select), LanguageCode.sv, LanguageCode.en, 1)
+                .buildExerciseQueue(ga, forms, List.of(), Set.of(ExerciseType.multi_select), LanguageCode.sv, LanguageCode.en, 1, false)
                 .get(0);
         MultiSelectPayload payload = (MultiSelectPayload) ex.exercise();
 

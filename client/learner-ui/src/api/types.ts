@@ -122,6 +122,14 @@ export type Enrollment = {
   status: EnrollmentStatus;
   wordsMastered?: number;
   totalWords?: number;
+  /**
+   * Exercise-level progress toward "list learned" — use this with `exercisesNeeded` for a
+   * progress bar, NOT wordsMastered/totalWords (moves in coarse jumps, only per fully-mastered
+   * word) and NOT sessions.done/estimatedTotal (tracks session cadence, not mastery).
+   */
+  exercisesCompleted?: number;
+  /** totalWords × the server's mastery threshold — not exposed separately, don't hardcode it. */
+  exercisesNeeded?: number;
   sessions?: {
     done?: number;
     estimatedTotal?: number;
@@ -134,6 +142,7 @@ export type WordProgress = {
   timesPracticed: number;
   correct?: number;
   wrong?: number;
+  /** Informational only — not a lockout; the word is already eligible for practice now. */
   due?: string | null;
 };
 
